@@ -1,0 +1,177 @@
+/* 🩵 Toàn trang */
+body {
+  font-family: 'MyFont', serif;
+  padding: 10px;
+  text-align: center;
+  background-image: url("background.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* 🩵 Tiêu đề */
+h2 {
+  position: absolute;
+  top: -2%;
+  left: 5%;
+  font-family: 'MyFont', serif;
+  font-size: 64px;
+  color: white;
+  margin-top: 40px;
+  margin-bottom: 10px;
+}
+
+/* 🩵 Khu vực chứa nút */
+.top-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+  gap: 20px;
+}
+
+/* 🩵 Nút chụp ảnh */
+#start {
+  position: absolute;
+  top: 5%;
+  font-family: 'MyFont', serif;
+  font-size: 32px;
+  background: #6084ac;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+#start:hover {
+  background: #4f6d8f;
+}
+
+/* 🩵 Bộ chọn thời gian */
+.time-control {
+  position: absolute;
+  left: 5%;
+  top:80%;
+  font-family: 'MyFont', serif;
+  font-size: 28px;
+  margin-top: 16px;
+  text-align: center;
+}
+#countdownTime {
+  font-family: 'MyFont', serif;
+  font-size: 28px; /* Thêm kích thước font cho input */
+  padding: 8px 12px; /* Thêm padding để input to hơn */
+  width: 36px; /* Đặt chiều rộng cố định */
+  height: 20px; /* Đặt chiều cao cố định */
+  border: 2px solid #6084ac; /* Thêm viền */
+  border-radius: 8px; /* Bo góc */
+  text-align: center; /* Căn giữa nội dung */
+}
+
+
+/* 🩵 Dòng trạng thái */
+#status {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #6084ac;
+  color: white;
+  font-family: 'MyFont', serif;
+  font-size: 32px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  display: none;
+  z-index: 1000;
+}
+
+/* 🩵 Bố cục 2 cột */
+.row {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+/* 🩵 Cột trái (chứa video) */
+.left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 🩵 Video hiển thị */
+video {
+  position: absolute;
+  left: 5%;
+  width: 640px;
+  height: 480px;
+  transform: scaleX(-1);
+  display: block;
+  border-radius: 32px;
+  background-color: #222;
+  object-fit: cover;
+}
+
+/* 🩵 Canvas hiển thị ảnh chụp */
+canvas {
+  position: absolute;
+  left: 60%;
+  background: #eee;
+  display: block;
+  margin: auto;
+  border-radius: 16px;
+}
+
+/* 🩵 Bộ chọn màu */
+.color-controls {
+  position: absolute;
+  left: 5%;
+  top: 72%;
+  font-family: 'MyFont', serif;
+  font-size: 28px;
+  margin-top: 16px;
+}
+
+/* 🩵 Nhãn văn bản */
+label {
+  margin-right: 6px;
+  color: white;
+}
+
+/* 🩵 Font chữ tùy chỉnh */
+@font-face {
+  font-family: 'MyFont';
+  src: url('MTO Astro City.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+/* 🩵 Bộ chọn chủ đề */
+.theme-controls {
+  position: absolute;
+  left: 5%;
+  top: 64%;
+  font-family: 'MyFont', serif;
+  font-size: 28px;
+  margin-top: 16px;
+}
+
+/* 🩵 Dropdown chọn chủ đề */
+#themeSelect {
+  font-family: 'MyFont', serif;
+  font-size: 24px;
+  padding: 6px 10px;
+  border: 2px solid #6084ac;
+  border-radius: 8px;
+  background-color: white;
+  cursor: pointer;
+}
+
+#themeSelect:focus {
+  outline: none;
+  border-color: #4f6d8f;
+}

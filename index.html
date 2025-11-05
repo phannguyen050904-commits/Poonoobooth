@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>PooNoobooth</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- ✅ Đưa status ra ngoài top-controls -->
+    <p id="status">Đang chụp...</p>
+
+    <h2>PooNoobooth</h2>
+
+    <div class="top-controls">
+      <button id="start">Chụp ảnh</button>
+    </div>
+ 
+    <div class="row">
+      <div class="left">
+        <video id="video" autoplay playsinline></video>
+        <div class="bottom-controls">
+          <div class="time-control">
+            <label for="countdownTime">Thời gian đếm (giây):</label>
+            <input type="number" id="countdownTime" min="1" max="10" value="5" />
+          </div>
+          <div class="color-controls">
+            <label for="frameColor">Màu viền:</label>
+            <input type="color" id="frameColor" value="#000000" />
+          </div>
+          <!-- Thêm nút chọn chủ đề -->
+          <div class="theme-controls">
+            <label for="themeSelect">Chủ đề:</label>
+            <select id="themeSelect">
+              <option value="Đi làm">Đi làm</option>
+
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <canvas id="canvas" width="480" height="640"></canvas>
+    </div>
+
+    <!-- Preload theme images -->
+    <div id="themePreload" style="display: none;">
+      <img id="themeĐi làm" src="themes/Đi làm.png" alt="Đi làm Theme">
+
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
