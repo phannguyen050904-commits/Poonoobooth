@@ -1,34 +1,20 @@
 <!DOCTYPE html>
-
-<html lang="vi">
-  <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Web 16:9 Responsive</title>
-  <style>
+  <title>PooNoobooth</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Background sẽ hiển thị toàn màn hình -->
+  
+  <!-- Container 16:9 chứa toàn bộ giao diện ứng dụng -->
+  <div class="app-container">
+    <h2>PooNoobooth</h2>
 
-    .container {
-      aspect-ratio: 16 / 9;
-      width: 100vw;
-      max-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-
-    }
-  </style>
-  <head>
-    <meta charset="UTF-8" />
-    <title>PooNoobooth</title>
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
     <!-- ✅ Đưa status ra ngoài top-controls -->
     <p id="status">Đang chụp...</p>
-
-    <h2>PooNoobooth</h2>
 
     <div class="top-controls">
       <button id="start">Chụp ảnh</button>
@@ -39,8 +25,8 @@
         <video id="video" autoplay playsinline></video>
         <div class="bottom-controls">
           <div class="time-control">
-            <label for="countdownTime">Thời gian đếm (giây):</label>
-            <input type="number" id="countdownTime" min="1" max="10" value="5" />
+            <label for="countdownTime">đếm ngược:</label>
+            <input type="number" id="countdownTime" value="5" />
           </div>
           <div class="color-controls">
             <label for="frameColor">Màu viền:</label>
@@ -48,11 +34,10 @@
           </div>
           <!-- Thêm nút chọn chủ đề -->
           <div class="theme-controls">
-            <label for="themeSelect">Chủ đề:</label>
+            <label for="themeSelect">Chủ đề</label>
             <select id="themeSelect">
-              <option value="none">Không chọn</option>
+              <option value="none">Không</option>
               <option value="Đi làm">Đi làm</option>
-
             </select>
           </div>
         </div>
@@ -64,11 +49,9 @@
     <!-- Preload theme images -->
     <div id="themePreload" style="display: none;">
       <img id="themeĐi làm" src="themes/Đi làm.png" alt="Đi làm Theme">
-
     </div>
+  </div>
 
-    <script src="app.js"></script>
-    
-  </body>
+  <script src="app.js"></script>
+</body>
 </html>
-

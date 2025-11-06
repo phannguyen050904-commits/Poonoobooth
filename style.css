@@ -1,147 +1,197 @@
-/* 🩵 Toàn trang */
+/* 🩵 Toàn trang - Background toàn màn hình */
 body {
   font-family: 'MyFont', serif;
-  padding: 10px;
-  text-align: center;
+  margin: 0;
+  padding: 0;
   background-image: url("background.png");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
-  min-width: 1200px; /* Đặt chiều rộng tối thiểu */
-  overflow-x: auto; /* Cho phép cuộn ngang nếu cần */
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* 🩵 Container chính 16:9 */
+.app-container {
+  aspect-ratio: 16 / 9;
+  width: 90vw;
+  max-width: 1366px;
+  max-height: 90vh;
+  background: rgba(255, 255, 255);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
 }
 
 /* 🩵 Tiêu đề */
 h2 {
   position: absolute;
-  top: 20px; /* Dùng px thay vì % */
-  left: 50px; /* Dùng px thay vì % */
+  top: 20px;
+  left: 50px;
   font-family: 'MyFont', serif;
-  font-size: 64px;
-  color: white;
+  font-size: 48px;
+  color: rgb(0, 0, 0);
   margin: 0;
 }
 
 /* 🩵 Khu vực chứa nút */
 .top-controls {
+  position: absolute;
+  top: 30px;
+  left: 535px;
+  transform: translateX(-50%);
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100px;
   gap: 20px;
 }
 
 /* 🩵 Nút chụp ảnh */
 #start {
-  position: absolute;
-  top: 50px;
   font-family: 'MyFont', serif;
-  font-size: 30px;
+  font-size: 24px;
   background: #6084ac;
   color: white;
   border: none;
   border-radius: 8px;
-  padding: 10px 20px;
+  padding: 12px 24px;
   cursor: pointer;
   transition: background 0.3s;
 }
 
 #start:hover {
   background: #4f6d8f;
+  transform: translateY(-2px);
 }
+
 /* 🩵 Dòng trạng thái */
 #status {
   position: absolute;
-  top: 20px;
+  top: 90px;
+  left: 535px;
   transform: translateX(-50%);
   background: #6084ac;
   color: white;
   font-family: 'MyFont', serif;
-  font-size: 30px;
+  font-size: 24px;
   padding: 10px 20px;
   border-radius: 8px;
   display: none;
   z-index: 1000;
 }
-/* 🩵 Bộ chọn thời gian */
-.time-control {
-  position: absolute;
-  left: 50px; /* Dùng px thay vì % */
-  top: 750px; /* Dùng px thay vì % */
-  font-family: 'MyFont', serif;
-  font-size: 28px;
-  text-align: center;
-}
-
-#countdownTime {
-  font-family: 'MyFont', serif;
-  font-size: 28px;
-  padding: 8px 12px;
-  width: 36px;
-  height: 20px;
-  border: 2px solid #6084ac;
-  border-radius: 8px;
-  text-align: center;
-}
-
-
 
 /* 🩵 Bố cục 2 cột */
 .row {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  gap: 20px;
-  margin-top: 20px;
+  gap: 40px;
+  margin-top: 120px;
+  height: calc(100% - 140px);
+  padding: 0 40px;
 }
 
 /* 🩵 Cột trái (chứa video) */
-.left {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-/* 🩵 Video hiển thị */
 video {
   position: absolute;
-  left: 50px; /* Dùng px thay vì % */
-  top: 150px; /* Dùng px thay vì % */
-  width: 640px;
-  height: 480px;
+  left: 50px;
+  width: 100%;
+  max-width: 360px;
+  height: auto;
+  max-height: 270px;
+  aspect-ratio: 4/3;  /* 🎯 Tỷ lệ cố định 4:3 */
   transform: scaleX(-1);
-  display: block;
   border-radius: 32px;
   background-color: #222;
   object-fit: cover;
 }
 
+.left {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
 /* 🩵 Canvas hiển thị ảnh chụp */
 canvas {
   position: absolute;
-  left: 750px; /* Dùng px thay vì % */
-  top: 150px; /* Dùng px thay vì % */
+  left: 460px;
+  max-width: 480px;
+  max-height: 480px;
+  height: auto;
   background: #eee;
-  display: block;
-  
+  border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+/* 🩵 Controls ở dưới */
+.bottom-controls {
+  position: absolute;
+  bottom: 30px;
+  left: 50px;
+  display: flex;
+  flex-direction: column; /* Thay đổi từ row sang column */
+  align-items: flex-start;
+  gap: 15px; /* Giảm khoảng cách giữa các control */
+}
+
+/* 🩵 Bộ chọn thời gian */
+.time-control {
+  font-family: 'MyFont', serif;
+  font-size: 20px;
+  text-align: center;
+  color: rgb(34, 13, 13);
+}
+
+#countdownTime {
+  font-family: 'MyFont', serif;
+  font-size: 16px;
+  width: 50px;
+  border: 2px solid #6084ac;
+  border-radius: 6px;
+  text-align: center;
+  background: rgba(255, 255, 255);
 }
 
 /* 🩵 Bộ chọn màu */
 .color-controls {
-  position: absolute;
-  left: 50px; /* Dùng px thay vì % */
-  top: 700px; /* Dùng px thay vì % */
   font-family: 'MyFont', serif;
-  font-size: 30px;
+  font-size: 20px;
   border-radius: 8px;
+  color: rgb(0, 0, 0);
+}
 
+/* 🩵 Bộ chọn chủ đề */
+.theme-controls {
+  font-family: 'MyFont', serif;
+  font-size: 20px;
+  color: rgb(2, 0, 0);
 }
 
 /* 🩵 Nhãn văn bản */
 label {
-  margin-right: 6px;
-  color: white;
+  margin-right: 8px;
+  color: rgb(8, 0, 0);
+}
+
+/* 🩵 Dropdown chọn chủ đề */
+#themeSelect {
+  font-family: 'MyFont', serif;
+  font-size: 20px;
+  border: 2px solid #6084ac;
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+}
+
+#themeSelect:focus {
+  outline: none;
+  border-color: #4f6d8f;
 }
 
 /* 🩵 Font chữ tùy chỉnh */
@@ -152,27 +202,34 @@ label {
   font-style: normal;
 }
 
-/* 🩵 Bộ chọn chủ đề */
-.theme-controls {
-  position: absolute;
-  left: 50px; /* Dùng px thay vì % */
-  top: 650px; /* Dùng px thay vì % */
-  font-family: 'MyFont', serif;
-  font-size: 30px;
-}
-
-/* 🩵 Dropdown chọn chủ đề */
-#themeSelect {
-  font-family: 'MyFont', serif;
-  font-size: 24px;
-  padding: 6px 10px;
-  border: 2px solid #6084ac;
-  border-radius: 8px;
-  background-color: white;
-  cursor: pointer;
-}
-
-#themeSelect:focus {
-  outline: none;
-  border-color: #4f6d8f;
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .app-container {
+    width: 95vw;
+    max-height: 95vh;
+  }
+  
+  h2 {
+    font-size: 36px;
+    left: 30px;
+  }
+  
+  .row {
+    gap: 20px;
+    padding: 0 20px;
+  }
+  
+  video {
+    max-width: 400px;
+    max-height: 300px;
+  }
+  
+  canvas {
+    max-width: 320px;
+    max-height: 426px;
+  }
+  
+  .bottom-controls {
+    gap: 20px;
+  }
 }
