@@ -8,18 +8,19 @@ body {
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
+  min-width: 1200px; /* Đặt chiều rộng tối thiểu */
+  overflow-x: auto; /* Cho phép cuộn ngang nếu cần */
 }
 
 /* 🩵 Tiêu đề */
 h2 {
   position: absolute;
-  top: -2%;
-  left: 5%;
+  top: 20px; /* Dùng px thay vì % */
+  left: 50px; /* Dùng px thay vì % */
   font-family: 'MyFont', serif;
   font-size: 64px;
   color: white;
-  margin-top: 40px;
-  margin-bottom: 10px;
+  margin: 0;
 }
 
 /* 🩵 Khu vực chứa nút */
@@ -34,9 +35,9 @@ h2 {
 /* 🩵 Nút chụp ảnh */
 #start {
   position: absolute;
-  top: 5%;
+  top: 50px;
   font-family: 'MyFont', serif;
-  font-size: 32px;
+  font-size: 30px;
   background: #6084ac;
   color: white;
   border: none;
@@ -49,44 +50,42 @@ h2 {
 #start:hover {
   background: #4f6d8f;
 }
-
-/* 🩵 Bộ chọn thời gian */
-.time-control {
-  position: absolute;
-  left: 5%;
-  top:80%;
-  font-family: 'MyFont', serif;
-  font-size: 28px;
-  margin-top: 16px;
-  text-align: center;
-}
-#countdownTime {
-  font-family: 'MyFont', serif;
-  font-size: 28px; /* Thêm kích thước font cho input */
-  padding: 8px 12px; /* Thêm padding để input to hơn */
-  width: 36px; /* Đặt chiều rộng cố định */
-  height: 20px; /* Đặt chiều cao cố định */
-  border: 2px solid #6084ac; /* Thêm viền */
-  border-radius: 8px; /* Bo góc */
-  text-align: center; /* Căn giữa nội dung */
-}
-
-
 /* 🩵 Dòng trạng thái */
 #status {
-  position: fixed;
+  position: absolute;
   top: 20px;
-  left: 50%;
   transform: translateX(-50%);
   background: #6084ac;
   color: white;
   font-family: 'MyFont', serif;
-  font-size: 32px;
+  font-size: 30px;
   padding: 10px 20px;
   border-radius: 8px;
   display: none;
   z-index: 1000;
 }
+/* 🩵 Bộ chọn thời gian */
+.time-control {
+  position: absolute;
+  left: 50px; /* Dùng px thay vì % */
+  top: 750px; /* Dùng px thay vì % */
+  font-family: 'MyFont', serif;
+  font-size: 28px;
+  text-align: center;
+}
+
+#countdownTime {
+  font-family: 'MyFont', serif;
+  font-size: 28px;
+  padding: 8px 12px;
+  width: 36px;
+  height: 20px;
+  border: 2px solid #6084ac;
+  border-radius: 8px;
+  text-align: center;
+}
+
+
 
 /* 🩵 Bố cục 2 cột */
 .row {
@@ -107,7 +106,8 @@ h2 {
 /* 🩵 Video hiển thị */
 video {
   position: absolute;
-  left: 5%;
+  left: 50px; /* Dùng px thay vì % */
+  top: 150px; /* Dùng px thay vì % */
   width: 640px;
   height: 480px;
   transform: scaleX(-1);
@@ -120,21 +120,22 @@ video {
 /* 🩵 Canvas hiển thị ảnh chụp */
 canvas {
   position: absolute;
-  left: 60%;
+  left: 750px; /* Dùng px thay vì % */
+  top: 150px; /* Dùng px thay vì % */
   background: #eee;
   display: block;
-  margin: auto;
-  border-radius: 16px;
+  
 }
 
 /* 🩵 Bộ chọn màu */
 .color-controls {
   position: absolute;
-  left: 5%;
-  top: 72%;
+  left: 50px; /* Dùng px thay vì % */
+  top: 700px; /* Dùng px thay vì % */
   font-family: 'MyFont', serif;
-  font-size: 28px;
-  margin-top: 16px;
+  font-size: 30px;
+  border-radius: 8px;
+
 }
 
 /* 🩵 Nhãn văn bản */
@@ -150,14 +151,14 @@ label {
   font-weight: normal;
   font-style: normal;
 }
+
 /* 🩵 Bộ chọn chủ đề */
 .theme-controls {
   position: absolute;
-  left: 5%;
-  top: 64%;
+  left: 50px; /* Dùng px thay vì % */
+  top: 650px; /* Dùng px thay vì % */
   font-family: 'MyFont', serif;
-  font-size: 28px;
-  margin-top: 16px;
+  font-size: 30px;
 }
 
 /* 🩵 Dropdown chọn chủ đề */

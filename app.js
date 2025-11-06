@@ -1,3 +1,4 @@
+
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
@@ -28,13 +29,13 @@ function preloadThemes() {
 
 // --- Mở camera --- //
 navigator.mediaDevices.getUserMedia({ video: true })
-  .then(stream => video.srcObject = stream)
-  .catch(err => console.error("Không mở được camera:", err));
+  .then(stream => video.srcObject = stream);
 
 // --- Vẽ khung viền ngoài --- //
 function drawOuterFrame() {
-  const outerLineWidth = 8;
+  const outerLineWidth = 10;
   const bottomLineWidth = 100;
+  const topLineWidth = 10;
   ctx.strokeStyle = frameColor;
 
   // 3 cạnh mỏng
@@ -54,7 +55,14 @@ function drawOuterFrame() {
   ctx.moveTo(0, canvas.height - bottomLineWidth / 2);
   ctx.lineTo(canvas.width, canvas.height - bottomLineWidth / 2);
   ctx.stroke();
+
+  ctx.lineWidth = topLineWidth;
+  ctx.beginPath();
+  ctx.moveTo(0, topLineWidth / 2);
+  ctx.lineTo(canvas.width, topLineWidth / 2);
+  ctx.stroke();
 }
+
 
 // --- Vẽ theme overlay --- //
 function drawThemeOverlay() {
@@ -77,7 +85,7 @@ function drawGrid() {
 
   drawOuterFrame();
 
-  const innerLineWidth = 8;
+  const innerLineWidth = 10;
   ctx.lineWidth = innerLineWidth;
 
   // Cột
@@ -131,7 +139,7 @@ function captureFrame(index) {
 
   // Vẽ lại viền
   ctx.strokeStyle = frameColor;
-  ctx.lineWidth = 8;
+  ctx.lineWidth = 10;
 
   for (let i = 1; i < cols; i++) {
     ctx.beginPath();
