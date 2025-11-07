@@ -4,54 +4,80 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PooNoobooth</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Background sẽ hiển thị toàn màn hình -->
-  
-  <!-- Container 16:9 chứa toàn bộ giao diện ứng dụng -->
-  <div class="app-container">
-    <h2>PooNoobooth</h2>
+  <header>
+    <div class="header-content">
+      <div class="logo">PooNoobooth</div>
+      <a href="https://www.instagram.com/fuownguyen/" target="_blank" class="logoinstagram">
+        <img src="icons/instagram_icon.png" class="instagram_icon" alt="Instagram">
+      </a>
+    <div>
+  </header>
 
-    <!-- ✅ Đưa status ra ngoài top-controls -->
-    <p id="status">Đang chụp...</p>
-
-    <div class="top-controls">
-      <button id="start">Chụp ảnh</button>
-    </div>
- 
-    <div class="row">
-      <div class="left">
-        <video id="video" autoplay playsinline></video>
-        <div class="bottom-controls">
-          <div class="time-control">
-            <label for="countdownTime">đếm ngược:</label>
-            <input type="number" id="countdownTime" value="5" />
+  <main>
+    <div class="app-container">
+      <!-- Camera -->
+      <section class="camera-section">
+        <h2 class="camera-title">Camera Live</h2>
+        <div class="video-container">
+          <video id="video" autoplay playsinline></video>
+          <canvas id="overlay" width="480" height="360"></canvas>
+        </div>
+        
+        <div class="controls">
+          <div class="action-buttons">
+            <button id="start">Chụp ảnh</button>
+            <div id="status">Đang chụp...</div>
           </div>
-          <div class="color-controls">
+
+          <div class="control-group">
+            <label for="countdownTime">Đếm ngược (s):</label>
+            <input type="number" id="countdownTime" min="1" max="10" value="5" />
+          </div>
+          
+          <div class="control-group">
             <label for="frameColor">Màu viền:</label>
             <input type="color" id="frameColor" value="#000000" />
           </div>
-          <!-- Thêm nút chọn chủ đề -->
-          <div class="theme-controls">
-            <label for="themeSelect">Chủ đề</label>
+
+          <div class="control-group">
+            <label for="themeSelect">Chủ đề:</label>
             <select id="themeSelect">
-              <option value="none">Không</option>
+              <option value="none">Không chọn</option>
               <option value="Đi làm">Đi làm</option>
             </select>
           </div>
+
+          <div class="control-group">
+            <label for="filterSelect">Bộ lọc khuôn mặt:</label>
+            <select id="filterSelect">
+              <option value="none">Không dùng</option>
+              <option value="mustache">râu</option>
+              <option value="Sơn Tùng-MTP">Sơn Tùng-MTP</option>
+            </select>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <canvas id="canvas" width="480" height="640"></canvas>
+      <!-- Canvas Kết quả -->
+      <section class="canvas-section">
+        <h2 class="canvas-title">Kết quả</h2>
+        <div class="canvas-container">
+          <canvas id="overlay" width="480" height="640" style="position: absolute; top: 0; left: 0; pointer-events: none;"></canvas>
+          <canvas id="canvas" width="480" height="640"></canvas>
+        </div>
+      </section>
     </div>
+  </main>
 
-    <!-- Preload theme images -->
-    <div id="themePreload" style="display: none;">
-      <img id="themeĐi làm" src="themes/Đi làm.png" alt="Đi làm Theme">
-    </div>
-  </div>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="./face-api.min.js"></script>
+    <script src="./script.js"></script>
+  </head>
   <script src="app.js"></script>
 </body>
 </html>
+

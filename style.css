@@ -1,200 +1,22 @@
-/* 🩵 Toàn trang - Background toàn màn hình */
-body {
-  font-family: 'MyFont', serif;
+/* Biến màu sắc */
+:root {
+  --primary: #6084ac;
+  --primary-dark: #4f6d8f;
+  --text: #333;
+  --text-light: #777;
+  --bg: #26405a;
+  --white: #ffffff;
+  --border: #e0e0e0;
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Reset và font */
+* {
   margin: 0;
   padding: 0;
-  background-image: url("background.png");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
+  box-sizing: border-box;
 }
 
-/* 🩵 Container chính 16:9 */
-.app-container {
-  aspect-ratio: 16 / 9;
-  width: 90vw;
-  max-width: 1366px;
-  max-height: 90vh;
-  background: rgba(255, 255, 255);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  position: relative;
-  overflow: hidden;
-}
-
-/* 🩵 Tiêu đề */
-h2 {
-  position: absolute;
-  top: 20px;
-  left: 50px;
-  font-family: 'MyFont', serif;
-  font-size: 48px;
-  color: rgb(0, 0, 0);
-  margin: 0;
-}
-
-/* 🩵 Khu vực chứa nút */
-.top-controls {
-  position: absolute;
-  top: 30px;
-  left: 535px;
-  transform: translateX(-50%);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 20px;
-}
-
-/* 🩵 Nút chụp ảnh */
-#start {
-  font-family: 'MyFont', serif;
-  font-size: 24px;
-  background: #6084ac;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 12px 24px;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-#start:hover {
-  background: #4f6d8f;
-  transform: translateY(-2px);
-}
-
-/* 🩵 Dòng trạng thái */
-#status {
-  position: absolute;
-  top: 90px;
-  left: 535px;
-  transform: translateX(-50%);
-  background: #6084ac;
-  color: white;
-  font-family: 'MyFont', serif;
-  font-size: 24px;
-  padding: 10px 20px;
-  border-radius: 8px;
-  display: none;
-  z-index: 1000;
-}
-
-/* 🩵 Bố cục 2 cột */
-.row {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 40px;
-  margin-top: 120px;
-  height: calc(100% - 140px);
-  padding: 0 40px;
-}
-
-/* 🩵 Cột trái (chứa video) */
-video {
-  position: absolute;
-  left: 50px;
-  width: 100%;
-  max-width: 360px;
-  height: auto;
-  max-height: 270px;
-  aspect-ratio: 4/3;  /* 🎯 Tỷ lệ cố định 4:3 */
-  transform: scaleX(-1);
-  border-radius: 32px;
-  background-color: #222;
-  object-fit: cover;
-}
-
-.left {
-  width: 100%;
-  max-width: 640px;
-  margin: 0 auto;
-}
-
-/* 🩵 Canvas hiển thị ảnh chụp */
-canvas {
-  position: absolute;
-  left: 460px;
-  max-width: 480px;
-  max-height: 480px;
-  height: auto;
-  background: #eee;
-  border: 3px solid rgba(255, 255, 255, 0.3);
-}
-
-/* 🩵 Controls ở dưới */
-.bottom-controls {
-  position: absolute;
-  bottom: 30px;
-  left: 50px;
-  display: flex;
-  flex-direction: column; /* Thay đổi từ row sang column */
-  align-items: flex-start;
-  gap: 15px; /* Giảm khoảng cách giữa các control */
-}
-
-/* 🩵 Bộ chọn thời gian */
-.time-control {
-  font-family: 'MyFont', serif;
-  font-size: 20px;
-  text-align: center;
-  color: rgb(34, 13, 13);
-}
-
-#countdownTime {
-  font-family: 'MyFont', serif;
-  font-size: 16px;
-  width: 50px;
-  border: 2px solid #6084ac;
-  border-radius: 6px;
-  text-align: center;
-  background: rgba(255, 255, 255);
-}
-
-/* 🩵 Bộ chọn màu */
-.color-controls {
-  font-family: 'MyFont', serif;
-  font-size: 20px;
-  border-radius: 8px;
-  color: rgb(0, 0, 0);
-}
-
-/* 🩵 Bộ chọn chủ đề */
-.theme-controls {
-  font-family: 'MyFont', serif;
-  font-size: 20px;
-  color: rgb(2, 0, 0);
-}
-
-/* 🩵 Nhãn văn bản */
-label {
-  margin-right: 8px;
-  color: rgb(8, 0, 0);
-}
-
-/* 🩵 Dropdown chọn chủ đề */
-#themeSelect {
-  font-family: 'MyFont', serif;
-  font-size: 20px;
-  border: 2px solid #6084ac;
-  border-radius: 6px;
-  background-color: rgba(255, 255, 255, 0.9);
-  cursor: pointer;
-}
-
-#themeSelect:focus {
-  outline: none;
-  border-color: #4f6d8f;
-}
-
-/* 🩵 Font chữ tùy chỉnh */
 @font-face {
   font-family: 'MyFont';
   src: url('MTO Astro City.ttf') format('truetype');
@@ -202,34 +24,261 @@ label {
   font-style: normal;
 }
 
-/* Responsive adjustments */
-@media (max-width: 1024px) {
+body {
+  font-family: 'MyFont', sans-serif;
+  background-color: white;
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+header {
+  background-color: var(--white);
+  box-shadow: var(--shadow);
+  padding: 1.5rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  gap: 3rem;
+  align-items: center;
+  flex-direction: row;
+
+
+  
+}
+
+
+.logo {
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--primary);
+}
+#logoinstagram {
+  color: rgb(26, 9, 58);
+  background-color: #222;
+  
+}
+.instagram_icon {
+  max-width: 3rem;
+  max-height: 3rem;
+}
+.instagram_icon:hover {
+  transform: scale(1.1);
+}
+main {
+  flex: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  width: 100%;
+}
+
+.app-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+@media (max-width: 768px) {
   .app-container {
-    width: 95vw;
-    max-height: 95vh;
+    grid-template-columns: 1fr;
   }
-  
-  h2 {
-    font-size: 36px;
-    left: 30px;
-  }
-  
-  .row {
-    gap: 20px;
-    padding: 0 20px;
-  }
-  
-  video {
-    max-width: 400px;
-    max-height: 300px;
-  }
-  
-  canvas {
-    max-width: 320px;
-    max-height: 426px;
-  }
-  
-  .bottom-controls {
-    gap: 20px;
-  }
+}
+
+/* Camera preview */
+.camera-section {
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.camera-title {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: var(--primary);
+}
+
+.video-container {
+  width: 100%;
+  max-width: 480px;
+  height: 360px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #222;
+  margin-bottom: 1.5rem;
+}
+
+#video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+/* Canvas preview */
+.canvas-section {
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.canvas-title {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: var(--primary);
+}
+
+.canvas-container {
+  width: 100%;
+  max-width: 480px;
+  overflow: hidden;
+  background: #eee;
+  margin-bottom: 1.5rem;
+}
+
+#canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Controls - Đã chuyển sang camera section */
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 480px;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+}
+
+.control-group label {
+  font-size: 1rem;
+  color: var(--text-light);
+}
+
+.control-group input,
+.control-group select {
+  text-align: center;
+  padding: 0rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 1rem;
+  max-height: 1.5rem ;
+}
+
+.control-group input:focus,
+.control-group select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+/* Buttons */
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+#start {
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  font-size: 1.1rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+#start:hover {
+  background-color: var(--primary-dark);
+}
+
+#status {
+  background-color: var(--primary);
+  color: white;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  text-align: center;
+  display: none;
+}
+
+/* Background image controls */
+#removeBackground {
+  background-color: #ff4757;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-family: inherit;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+#removeBackground:hover {
+  background-color: #ff3742;
+}
+
+.control-group input[type="file"] {
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 1rem;
+  background-color: var(--white);
+}
+
+/* Color input styling */
+.control-group input[type="color"] {
+  height: 50px;
+  padding: 0.25rem;
+  cursor: pointer;
+}
+
+/* Footer */
+footer {
+  background-color: var(--white);
+  padding: 1.5rem 0;
+  margin-top: 2rem;
+  border-top: 1px solid var(--border);
+}
+
+.footer-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  text-align: center;
+  color: var(--text-light);
+}
+
+/* Theme preload (hidden) */
+#themePreload {
+  display: none;
 }

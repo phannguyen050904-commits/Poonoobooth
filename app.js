@@ -1,15 +1,21 @@
-
 const video = document.getElementById('video');
+const overlay = document.getElementById('overlay');
+const overlayCtx = overlay.getContext('2d');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
+
 const startBtn = document.getElementById('start');
 const statusText = document.getElementById('status');
 const frameColorPicker = document.getElementById('frameColor');
 const countdownInput = document.getElementById('countdownTime');
 const themeSelect = document.getElementById('themeSelect');
+const filterSelect = document.getElementById('filterSelect');
 
-let frameColor = "#f7f2f2ff";
+
+let frameColor = "#ffffff";
 let currentTheme = "none";
+let selectedFilter = "none";
+let filterActive = false;
 let themeImages = {};
 
 const rows = 3, cols = 2;
@@ -17,7 +23,12 @@ const bottomPadding = 100;
 const frameW = canvas.width / cols;
 const frameH = (canvas.height - bottomPadding) / rows;
 
-// --- Preload theme images --- //
+// --- Mở camera ---
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then(stream => video.srcObject = stream)
+  .catch(err => console.error("Không mở được camera:", err));
+
+// --- Preload theme ---
 function preloadThemes() {
   const themes = ['Đi làm'];
   themes.forEach(theme => {
@@ -26,12 +37,9 @@ function preloadThemes() {
     themeImages[theme] = img;
   });
 }
+preloadThemes();
 
-// --- Mở camera --- //
-navigator.mediaDevices.getUserMedia({ video: true })
-  .then(stream => video.srcObject = stream);
-
-// --- Vẽ khung viền ngoài --- //
+// --- Vẽ khung viền ---
 function drawOuterFrame() {
   const outerLineWidth = 10;
   const bottomLineWidth = 100;
@@ -55,7 +63,6 @@ function drawOuterFrame() {
   ctx.moveTo(0, canvas.height - bottomLineWidth / 2);
   ctx.lineTo(canvas.width, canvas.height - bottomLineWidth / 2);
   ctx.stroke();
-
   ctx.lineWidth = topLineWidth;
   ctx.beginPath();
   ctx.moveTo(0, topLineWidth / 2);
@@ -63,21 +70,17 @@ function drawOuterFrame() {
   ctx.stroke();
 }
 
-
-// --- Vẽ theme overlay --- //
+// --- Vẽ theme overlay ---
 function drawThemeOverlay() {
   if (currentTheme !== "none" && themeImages[currentTheme]) {
     const img = themeImages[currentTheme];
     if (img.complete && img.naturalHeight !== 0) {
-      // Vẽ theme overlay lên toàn bộ canvas
-      // Độ trong suốt
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-       // Reset độ trong suốt
     }
   }
 }
 
-// --- Vẽ lưới chia --- //
+// --- Vẽ lưới ---
 function drawGrid() {
   ctx.fillStyle = "#eee";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -104,27 +107,124 @@ function drawGrid() {
     ctx.stroke();
   }
 
-  // Vẽ theme overlay
   drawThemeOverlay();
 }
-
-// Khởi tạo canvas ban đầu
-preloadThemes();
 drawGrid();
 
-// --- Đổi màu khung --- //
+// --- Đổi màu viền ---
 frameColorPicker.addEventListener("input", () => {
   frameColor = frameColorPicker.value;
   drawGrid();
 });
 
-// --- Đổi chủ đề --- //
+// --- Đổi theme ---
 themeSelect.addEventListener("change", () => {
   currentTheme = themeSelect.value;
   drawGrid();
 });
 
-// --- Hàm chụp từng khung --- //
+// --- Tải mô hình nhận diện ---
+async function loadFaceModels() {
+  try {
+    console.log("🔄 Đang tải mô hình nhận diện...");
+    
+    if (typeof faceapi === 'undefined') {
+      throw new Error("face-api.js chưa được tải");
+    }
+
+    await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+    await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+    await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
+    await faceapi.nets.faceExpressionNet.loadFromUri('/models');
+    
+    console.log("✅ Face models loaded");
+    return true;
+  } catch (error) {
+    console.error("❌ Lỗi tải models:", error);
+    
+    try {
+      console.log("🔄 Thử tải từ CDN...");
+      await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
+      await faceapi.nets.faceLandmark68Net.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
+      await faceapi.nets.faceRecognitionNet.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
+      await faceapi.nets.faceExpressionNet.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
+      
+      console.log("✅ Models loaded from CDN");
+      return true;
+    } catch (cdnError) {
+      console.error("❌ Lỗi tải từ CDN:", cdnError);
+      statusText.textContent = "❌ Lỗi tải mô hình nhận diện";
+      return false;
+    }
+  }
+}
+
+// --- Hiển thị filter trực tiếp ---
+async function detectFacesLive() {
+  if (selectedFilter === "none") {
+    overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+    requestAnimationFrame(detectFacesLive);
+    return;
+  }
+
+  const detections = await faceapi
+    .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+    .withFaceLandmarks();
+
+  overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+
+  if (detections.length > 0) {
+    detections.forEach(d => {
+      const landmarks = d.landmarks;
+      const nose = landmarks.getNose();
+      const leftEye = landmarks.getLeftEye();
+      const rightEye = landmarks.getRightEye();
+
+      if (selectedFilter === "mustache") {
+        const x = nose[3].x - 40;
+        const y = nose[3].y + 10;
+        overlayCtx.fillStyle = "black";
+        overlayCtx.fillRect(x, y, 80, 10);
+      }
+
+      if (selectedFilter === "mũ_noel") {
+        const x = (leftEye[3].x + rightEye[0].x) / 2 -150;
+        const y = leftEye[0].y - 160;
+        const img = new Image();
+        img.src = "filters/mũ_noel.png";
+        img.onload = () => overlayCtx.drawImage(img, x, y, 100, 60);
+      }
+        if (selectedFilter === "Sơn Tùng-MTP") {
+        const x = (leftEye[3].x + rightEye[0].x) / 2 -150;
+        const y = leftEye[0].y - 150;
+        const img = new Image();
+        img.src = "filters/Sơn Tùng-MTP.png";
+        img.onload = () => overlayCtx.drawImage(img, x, y, 120, 36);
+      }
+    });
+  }
+
+  requestAnimationFrame(detectFacesLive);
+}
+
+filterSelect.addEventListener("change", async () => {
+  selectedFilter = filterSelect.value;
+
+  if (selectedFilter === "none") {
+    filterActive = false;
+    overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+    return;
+  }
+
+  if (!filterActive) {
+    await loadFaceModels();
+    filterActive = true;
+  }
+
+  detectFacesLive();
+});
+
+// --- Chụp ảnh ---
 function captureFrame(index) {
   const row = Math.floor(index / cols);
   const col = index % cols;
@@ -134,10 +234,13 @@ function captureFrame(index) {
   ctx.save();
   ctx.translate(x + frameW, y);
   ctx.scale(-1, 1);
-  ctx.drawImage(video, 0, 0, frameW, frameH);
-  ctx.restore();
 
-  // Vẽ lại viền
+  // Vẽ video + overlay filter
+  ctx.drawImage(video, 0, 0, frameW, frameH);
+  ctx.drawImage(overlay, 0, 0, frameW, frameH);
+  
+
+  ctx.restore();
   ctx.strokeStyle = frameColor;
   ctx.lineWidth = 10;
 
@@ -153,17 +256,13 @@ function captureFrame(index) {
     ctx.lineTo(canvas.width, i * frameH);
     ctx.stroke();
   }
-  
   drawOuterFrame();
-  // Vẽ lại theme overlay sau khi chụp
   drawThemeOverlay();
 }
 
-// --- Bắt đầu quá trình chụp --- //
 function startCapture() {
   startBtn.style.display = "none";
-  statusText.style.display = "inline-block";
-
+  statusText.style.display = "block";
   drawGrid();
 
   let count = 0;
@@ -176,13 +275,12 @@ function startCapture() {
 
       if (count >= 6) {
         clearInterval(timer);
-        statusText.textContent = "✅ Hoàn tất chụp 6 ảnh!";
+        statusText.textContent = "Tada!!!";
         setTimeout(() => {
-          startBtn.style.display = "inline-block";
+          startBtn.style.display = "block";
           statusText.style.display = "none";
         }, 3000);
 
-        // Tự tải ảnh
         const link = document.createElement('a');
         link.download = 'photo_strip.png';
         link.href = canvas.toDataURL();
