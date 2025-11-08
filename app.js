@@ -30,7 +30,7 @@ navigator.mediaDevices.getUserMedia({ video: true })
 
 // --- Preload theme ---
 function preloadThemes() {
-  const themes = ['Đi làm'];
+  const themes = ['Đi làm', 'Danisa'];
   themes.forEach(theme => {
     const img = new Image();
     img.src = `themes/${theme}.png`;
@@ -186,20 +186,26 @@ async function detectFacesLive() {
         overlayCtx.fillStyle = "black";
         overlayCtx.fillRect(x, y, 80, 10);
       }
-
-      if (selectedFilter === "mũ_noel") {
-        const x = (leftEye[3].x + rightEye[0].x) / 2 -150;
-        const y = leftEye[0].y - 160;
-        const img = new Image();
-        img.src = "filters/mũ_noel.png";
-        img.onload = () => overlayCtx.drawImage(img, x, y, 100, 60);
-      }
         if (selectedFilter === "Sơn Tùng-MTP") {
-        const x = (leftEye[3].x + rightEye[0].x) / 2 -150;
-        const y = leftEye[0].y - 150;
         const img = new Image();
         img.src = "filters/Sơn Tùng-MTP.png";
-        img.onload = () => overlayCtx.drawImage(img, x, y, 120, 36);
+        img.onload = () => {
+            // Tính khoảng cách giữa 2 mắt
+          const faceWidth = Math.abs(rightEye[3].x - leftEye[0].x) * 2.2; // nhân 2.2 để rộng hơn chút
+          const faceHeight = faceWidth * 0.35; // giữ tỉ lệ gốc
+
+  // Tâm giữa hai mắt
+          const centerX = (leftEye[3].x + rightEye[0].x) / 2 - faceWidth*0.6;
+          const centerY = (nose[0].y - faceHeight * 3);
+
+          overlayCtx.drawImage(
+            img,
+            centerX - faceWidth / 2,
+            centerY - faceHeight / 2,
+            faceWidth,
+            faceHeight
+          );
+        }
       }
     });
   }

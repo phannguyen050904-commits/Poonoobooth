@@ -20,7 +20,7 @@
     <div class="app-container">
       <!-- Camera -->
       <section class="camera-section">
-        <h2 class="camera-title">Camera Live</h2>
+        <h2 class="camera-title">PooNoobooth</h2>
         <div class="video-container">
           <video id="video" autoplay playsinline></video>
           <canvas id="overlay" width="480" height="360"></canvas>
@@ -45,15 +45,16 @@
           <div class="control-group">
             <label for="themeSelect">Chủ đề:</label>
             <select id="themeSelect">
-              <option value="none">Không chọn</option>
+              <option value="none">Không</option>
               <option value="Đi làm">Đi làm</option>
+              <option value="Danisa">Danisa</option>
             </select>
           </div>
 
           <div class="control-group">
-            <label for="filterSelect">Bộ lọc khuôn mặt:</label>
+            <label for="filterSelect">Filter</label>
             <select id="filterSelect">
-              <option value="none">Không dùng</option>
+              <option value="none">Không</option>
               <option value="mustache">râu</option>
               <option value="Sơn Tùng-MTP">Sơn Tùng-MTP</option>
             </select>
@@ -63,8 +64,9 @@
 
       <!-- Canvas Kết quả -->
       <section class="canvas-section">
-        <h2 class="canvas-title">Kết quả</h2>
+        <h2 class="canvas-title">Photo</h2>
         <div class="canvas-container">
+        </div>
           <canvas id="overlay" width="480" height="640" style="position: absolute; top: 0; left: 0; pointer-events: none;"></canvas>
           <canvas id="canvas" width="480" height="640"></canvas>
         </div>
