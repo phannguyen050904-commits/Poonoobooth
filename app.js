@@ -1,3 +1,4 @@
+
 const video = document.getElementById('video');
 const overlay = document.getElementById('overlay');
 const overlayCtx = overlay.getContext('2d');
@@ -205,7 +206,32 @@ async function detectFacesLive() {
             faceWidth,
             faceHeight
           );
+          
         }
+        
+      }
+      if (selectedFilter === "T1 6 sao.png") {
+        const img = new Image();
+        img.src = "filters/T1 6 sao.png";
+        img.onload = () => {
+            // Tính khoảng cách giữa 2 mắt
+          const faceWidth = Math.abs(rightEye[3].x - leftEye[0].x) * 2.2; // nhân 2.2 để rộng hơn chút
+          const faceHeight = faceWidth * 0.35; // giữ tỉ lệ gốc
+
+  // Tâm giữa hai mắt
+          const centerX = (leftEye[3].x + rightEye[0].x) / 2 - faceWidth*0.6;
+          const centerY = (nose[0].y - faceHeight * 2.9);
+
+          overlayCtx.drawImage(
+            img,
+            centerX - faceWidth / 2,
+            centerY - faceHeight / 2,
+            faceWidth,
+            faceHeight
+          );
+          
+        }
+        
       }
     });
   }
