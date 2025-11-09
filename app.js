@@ -210,7 +210,7 @@ async function detectFacesLive() {
         }
         
       }
-      if (selectedFilter === "T1 6 sao.png") {
+      if (selectedFilter === "T1 6 sao") {
         const img = new Image();
         img.src = "filters/T1 6 sao.png";
         img.onload = () => {
