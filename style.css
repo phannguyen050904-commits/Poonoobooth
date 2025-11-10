@@ -282,16 +282,17 @@ footer {
 @media (max-width: 768px) {
   /* Header nhỏ lại */
   header {
-    padding: 0rem 0;
+    padding: 0.5rem 0;
   }
   
   .header-content {
-    padding: 0 0rem;
-    gap: 0rem;
+    max-width: 600;
+    padding: 0 0.5rem;
+    gap: 0.5rem;
   }
   
   .logo {
-    font-size: 1rem;
+    font-size: 7.5rem;
   }
   
   .instagram_icon {
