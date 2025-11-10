@@ -317,14 +317,11 @@ async function initializeFilter() {
 }
 
 // --- Chụp ảnh (KHÔNG KÉO GIÃN) ---
-// --- Chụp ảnh (KHÔNG KÉO GIÃN) - VERSION ĐÃ SỬA ---
 function captureFrame(index) {
   const row = Math.floor(index / cols);
   const col = index % cols;
   const x = col * frameW;
   const y = row * frameH;
-
-  console.log(`📸 Chụp frame ${index} tại vị trí: row=${row}, col=${col}, x=${x}, y=${y}`);
 
   ctx.save();
   
@@ -360,58 +357,59 @@ function captureFrame(index) {
 
   ctx.restore();
 
-  console.log(`✅ Đã chụp xong frame ${index}`);
+  // Vẽ grid và frame
+  ctx.strokeStyle = frameColor;
+  ctx.lineWidth = 10;
+
+  for (let i = 1; i < cols; i++) {
+    ctx.beginPath();
+    ctx.moveTo(i * frameW, 0);
+    ctx.lineTo(i * frameW, canvas.height);
+    ctx.stroke();
+  }
+  for (let i = 1; i < rows; i++) {
+    ctx.beginPath();
+    ctx.moveTo(0, i * frameH);
+    ctx.lineTo(canvas.width, i * frameH);
+    ctx.stroke();
+  }
+  drawOuterFrame();
+  drawThemeOverlay();
 }
 
 function startCapture() {
   startBtn.style.display = "none";
   statusText.style.display = "block";
-  
-  // VẼ LƯỚI TRƯỚC KHI CHỤP - QUAN TRỌNG!
   drawGrid();
 
   let count = 0;
   let timeLeft = parseInt(countdownInput.value);
 
-  console.log(`🎬 Bắt đầu chụp ảnh, tổng: 6 ảnh, đếm ngược: ${timeLeft}s`);
-
   const timer = setInterval(() => {
     if (timeLeft === 0) {
-      console.log(`📸 Chụp ảnh thứ ${count + 1}`);
       captureFrame(count);
       count++;
 
       if (count >= 6) {
         clearInterval(timer);
-        console.log("🎉 Hoàn thành chụp 6 ảnh!");
         statusText.textContent = "Tada!!!";
-        
-        // Tải ảnh về
-        setTimeout(() => {
-          const link = document.createElement('a');
-          link.download = 'poonoobooth_photo.png';
-          link.href = canvas.toDataURL('image/png', 1.0);
-          link.click();
-          console.log("⬇️ Đã tải ảnh về");
-        }, 500);
-        
         setTimeout(() => {
           startBtn.style.display = "block";
           statusText.style.display = "none";
         }, 3000);
+
+        // Tải ảnh về
+        const link = document.createElement('a');
+        link.download = 'photo_strip.png';
+        link.href = canvas.toDataURL();
+        link.click();
         return;
       }
-      
-      // Reset thời gian đếm ngược cho ảnh tiếp theo
       timeLeft = parseInt(countdownInput.value);
     }
-    
-    statusText.textContent = `Ảnh ${count + 1}/6 chụp sau ${timeLeft}s`;
-    timeLeft--;
-    
+    statusText.textContent = `Ảnh ${count + 1}/6 chụp sau ${timeLeft--}s`;
   }, 1000);
 }
-
 
 startBtn.addEventListener('click', startCapture);
 
