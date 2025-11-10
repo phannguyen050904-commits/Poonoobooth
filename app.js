@@ -11,7 +11,7 @@ const countdownInput = document.getElementById('countdownTime');
 const themeSelect = document.getElementById('themeSelect');
 const filterSelect = document.getElementById('filterSelect');
 
-let frameColor = "#000000";
+let frameColor = "#ffffff";
 let currentTheme = "none";
 let selectedFilter = "none";
 let filterActive = false;
@@ -22,46 +22,13 @@ let animationFrameId = null;
 
 const rows = 3, cols = 2;
 const bottomPadding = 100;
-let frameW, frameH;
-
-// --- Khởi tạo kích thước canvas ---
-function setupCanvasSize() {
-  const container = document.querySelector('.canvas-container');
-  
-  // Lấy kích thước thực tế của container
-  const containerWidth = container.clientWidth;
-  const containerHeight = containerWidth * (4/3); // Tỉ lệ 4:3
-  
-  canvas.width = containerWidth;
-  canvas.height = containerHeight;
-  
-  // Cập nhật lại grid dimensions
-  frameW = canvas.width / cols;
-  frameH = (canvas.height - bottomPadding) / rows;
-  
-  // Vẽ lại grid
-  drawGrid();
-}
+const frameW = canvas.width / cols;
+const frameH = (canvas.height - bottomPadding) / rows;
 
 // --- Mở camera ---
-navigator.mediaDevices.getUserMedia({ 
-  video: { 
-    width: { ideal: 1280 },
-    height: { ideal: 720 }
-  } 
-})
-.then(stream => {
-  video.srcObject = stream;
-  video.onloadedmetadata = () => {
-    handleResize();
-    setupCanvasSize();
-  };
-})
-.catch(err => {
-  console.error("Không mở được camera:", err);
-  statusText.textContent = "❌ Lỗi camera! Vui lòng cho phép truy cập camera.";
-  statusText.style.display = "block";
-});
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then(stream => video.srcObject = stream)
+  .catch(err => console.error("Không mở được camera:", err));
 
 // --- Preload themes và filters ---
 function preloadAssets() {
@@ -160,6 +127,7 @@ function drawGrid() {
 
   drawThemeOverlay();
 }
+drawGrid();
 
 // --- Đổi màu viền ---
 frameColorPicker.addEventListener("input", () => {
@@ -316,7 +284,7 @@ async function initializeFilter() {
   detectFacesLive();
 }
 
-// --- Chụp ảnh (KHÔNG KÉO GIÃN) ---
+// --- Chụp ảnh ---
 function captureFrame(index) {
   const row = Math.floor(index / cols);
   const col = index % cols;
@@ -324,36 +292,18 @@ function captureFrame(index) {
   const y = row * frameH;
 
   ctx.save();
-  
-  // Tính tỉ lệ scale để giữ nguyên tỉ lệ video (KHÔNG KÉO GIÃN)
-  const videoAspect = video.videoWidth / video.videoHeight;
-  const frameAspect = frameW / frameH;
-  
-  let drawWidth, drawHeight, offsetX, offsetY;
-  
-  if (videoAspect > frameAspect) {
-    // Video rộng hơn frame -> fit theo chiều cao
-    drawHeight = frameH;
-    drawWidth = drawHeight * videoAspect;
-    offsetX = (frameW - drawWidth) / 2;
-    offsetY = 0;
-  } else {
-    // Video cao hơn frame -> fit theo chiều rộng
-    drawWidth = frameW;
-    drawHeight = drawWidth / videoAspect;
-    offsetX = 0;
-    offsetY = (frameH - drawHeight) / 2;
-  }
-
-  // Vẽ video với tỉ lệ chính xác (KHÔNG KÉO GIÃN)
   ctx.translate(x + frameW, y);
   ctx.scale(-1, 1);
-  ctx.drawImage(video, -offsetX, offsetY, drawWidth, drawHeight);
+
+  // Tính tỉ lệ scale để vẽ video + overlay lên canvas
+  const scaleX = frameW / video.videoWidth;
+  const scaleY = frameH / video.videoHeight;
   
-  // Vẽ overlay filter với cùng tỉ lệ
-  if (overlay.width > 0 && overlay.height > 0) {
-    ctx.drawImage(overlay, -offsetX, offsetY, drawWidth, drawHeight);
-  }
+  // Vẽ video
+  ctx.drawImage(video, 0, 0, frameW, frameH);
+  
+  // Vẽ overlay với scaling chính xác
+  ctx.drawImage(overlay, 0, 0, video.videoWidth, video.videoHeight, 0, 0, frameW, frameH);
 
   ctx.restore();
 
@@ -398,7 +348,6 @@ function startCapture() {
           statusText.style.display = "none";
         }, 3000);
 
-        // Tải ảnh về
         const link = document.createElement('a');
         link.download = 'photo_strip.png';
         link.href = canvas.toDataURL();
@@ -427,12 +376,5 @@ function handleResize() {
 }
 
 video.addEventListener('loadedmetadata', handleResize);
-window.addEventListener('resize', () => {
-  handleResize();
-  setupCanvasSize();
-});
-window.addEventListener('load', setupCanvasSize);
+window.addEventListener('resize', handleResize);
 video.addEventListener('play', handleResize);
-
-// Khởi tạo lần đầu
-setupCanvasSize();
