@@ -106,13 +106,13 @@ main {
 
 .video-container {
   width: 100%;
+  aspect-ratio: 4/3; /* Giữ tỉ lệ 4:3 */
   max-width: 480px;
-  height: 360px;
   border-radius: 12px;
   overflow: hidden;
   background: #222;
   margin-bottom: 1.5rem;
-  position: relative; /* Thêm vào */
+  position: relative;
 }
 
 #video, #overlay {
@@ -120,7 +120,7 @@ main {
   height: 100%;
   object-fit: cover;
   transform: scaleX(-1);
-  position: absolute; /* Thêm vào */
+  position: absolute;
   top: 0;
   left: 0;
 }
@@ -277,4 +277,19 @@ footer {
 /* Theme preload (hidden) */
 #themePreload {
   display: none;
+}
+@media (max-width: 480px) {
+  .video-container {
+    max-width: 100%;
+    aspect-ratio: 3/4; /* Tỉ lệ dọc cho mobile */
+  }
+  
+  .app-container {
+    gap: 1rem;
+    padding: 1rem;
+  }
+  
+  .camera-section, .canvas-section {
+    padding: 1rem;
+  }
 }

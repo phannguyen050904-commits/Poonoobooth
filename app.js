@@ -1,4 +1,3 @@
-
 const video = document.getElementById('video');
 const overlay = document.getElementById('overlay');
 const overlayCtx = overlay.getContext('2d');
@@ -12,12 +11,14 @@ const countdownInput = document.getElementById('countdownTime');
 const themeSelect = document.getElementById('themeSelect');
 const filterSelect = document.getElementById('filterSelect');
 
-
 let frameColor = "#ffffff";
 let currentTheme = "none";
 let selectedFilter = "none";
 let filterActive = false;
 let themeImages = {};
+let filterImages = {};
+let detectionInProgress = false;
+let animationFrameId = null;
 
 const rows = 3, cols = 2;
 const bottomPadding = 100;
@@ -29,16 +30,35 @@ navigator.mediaDevices.getUserMedia({ video: true })
   .then(stream => video.srcObject = stream)
   .catch(err => console.error("Không mở được camera:", err));
 
-// --- Preload theme ---
-function preloadThemes() {
+// --- Preload themes và filters ---
+function preloadAssets() {
+  // Preload themes
   const themes = ['Đi làm', 'Danisa'];
   themes.forEach(theme => {
     const img = new Image();
     img.src = `themes/${theme}.png`;
     themeImages[theme] = img;
   });
+
+  // Preload filters
+  const filters = [
+    { name: "Sơn Tùng-MTP", path: "filters/Sơn Tùng-MTP.png", offsetY: 3 },
+    { name: "T1 6 sao", path: "filters/T1 6 sao.png", offsetY: 2.9 }
+  ];
+
+  filters.forEach(filter => {
+    const img = new Image();
+    img.src = filter.path;
+    img.onload = () => {
+      console.log(`✅ Filter ${filter.name} loaded`);
+    };
+    filterImages[filter.name] = {
+      image: img,
+      offsetY: filter.offsetY
+    };
+  });
 }
-preloadThemes();
+preloadAssets();
 
 // --- Vẽ khung viền ---
 function drawOuterFrame() {
@@ -47,7 +67,6 @@ function drawOuterFrame() {
   const topLineWidth = 10;
   ctx.strokeStyle = frameColor;
 
-  // 3 cạnh mỏng
   ctx.lineWidth = outerLineWidth;
   ctx.beginPath();
   ctx.moveTo(outerLineWidth / 2, outerLineWidth / 2);
@@ -58,12 +77,12 @@ function drawOuterFrame() {
   ctx.lineTo(canvas.width - outerLineWidth / 2, canvas.height - outerLineWidth / 2);
   ctx.stroke();
 
-  // cạnh đáy dày
   ctx.lineWidth = bottomLineWidth;
   ctx.beginPath();
   ctx.moveTo(0, canvas.height - bottomLineWidth / 2);
   ctx.lineTo(canvas.width, canvas.height - bottomLineWidth / 2);
   ctx.stroke();
+  
   ctx.lineWidth = topLineWidth;
   ctx.beginPath();
   ctx.moveTo(0, topLineWidth / 2);
@@ -92,7 +111,6 @@ function drawGrid() {
   const innerLineWidth = 10;
   ctx.lineWidth = innerLineWidth;
 
-  // Cột
   for (let i = 1; i < cols; i++) {
     ctx.beginPath();
     ctx.moveTo(i * frameW, 0);
@@ -100,7 +118,6 @@ function drawGrid() {
     ctx.stroke();
   }
 
-  // Hàng
   for (let i = 1; i < rows; i++) {
     ctx.beginPath();
     ctx.moveTo(0, i * frameH);
@@ -164,82 +181,70 @@ async function loadFaceModels() {
 async function detectFacesLive() {
   if (selectedFilter === "none") {
     overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
-    requestAnimationFrame(detectFacesLive);
+    animationFrameId = requestAnimationFrame(detectFacesLive);
     return;
   }
 
-  const detections = await faceapi
-    .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
-    .withFaceLandmarks();
-
-  overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
-
-  if (detections.length > 0) {
-    detections.forEach(d => {
-      const landmarks = d.landmarks;
-      const nose = landmarks.getNose();
-      const leftEye = landmarks.getLeftEye();
-      const rightEye = landmarks.getRightEye();
-
-      if (selectedFilter === "mustache") {
-        const x = nose[3].x - 40;
-        const y = nose[3].y + 10;
-        overlayCtx.fillStyle = "black";
-        overlayCtx.fillRect(x, y, 80, 10);
-      }
-        if (selectedFilter === "Sơn Tùng-MTP") {
-        const img = new Image();
-        img.src = "filters/Sơn Tùng-MTP.png";
-        img.onload = () => {
-            // Tính khoảng cách giữa 2 mắt
-          const faceWidth = Math.abs(rightEye[3].x - leftEye[0].x) * 2.2; // nhân 2.2 để rộng hơn chút
-          const faceHeight = faceWidth * 0.35; // giữ tỉ lệ gốc
-
-  // Tâm giữa hai mắt
-          const centerX = (leftEye[3].x + rightEye[0].x) / 2 - faceWidth*0.6;
-          const centerY = (nose[0].y - faceHeight * 3);
-
-          overlayCtx.drawImage(
-            img,
-            centerX - faceWidth / 2,
-            centerY - faceHeight / 2,
-            faceWidth,
-            faceHeight
-          );
-          
-        }
-        
-      }
-      if (selectedFilter === "T1 6 sao") {
-        const img = new Image();
-        img.src = "filters/T1 6 sao.png";
-        img.onload = () => {
-            // Tính khoảng cách giữa 2 mắt
-          const faceWidth = Math.abs(rightEye[3].x - leftEye[0].x) * 2.2; // nhân 2.2 để rộng hơn chút
-          const faceHeight = faceWidth * 0.35; // giữ tỉ lệ gốc
-
-  // Tâm giữa hai mắt
-          const centerX = (leftEye[3].x + rightEye[0].x) / 2 - faceWidth*0.6;
-          const centerY = (nose[0].y - faceHeight * 2.9);
-
-          overlayCtx.drawImage(
-            img,
-            centerX - faceWidth / 2,
-            centerY - faceHeight / 2,
-            faceWidth,
-            faceHeight
-          );
-          
-        }
-        
-      }
-    });
+  if (detectionInProgress) {
+    animationFrameId = requestAnimationFrame(detectFacesLive);
+    return;
   }
 
-  requestAnimationFrame(detectFacesLive);
+  detectionInProgress = true;
+
+  // Đảm bảo overlay có cùng kích thước với video
+  if (overlay.width !== video.videoWidth || overlay.height !== video.videoHeight) {
+    overlay.width = video.videoWidth;
+    overlay.height = video.videoHeight;
+  }
+
+  try {
+    const detections = await faceapi
+      .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+      .withFaceLandmarks();
+
+    overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+
+    if (detections.length > 0 && selectedFilter !== "none") {
+      const currentFilter = filterImages[selectedFilter];
+      
+      if (currentFilter && currentFilter.image.complete) {
+        detections.forEach(d => {
+          const landmarks = d.landmarks;
+          const nose = landmarks.getNose();
+          const leftEye = landmarks.getLeftEye();
+          const rightEye = landmarks.getRightEye();
+
+          const faceWidth = Math.abs(rightEye[3].x - leftEye[0].x) * 2.2;
+          const faceHeight = faceWidth * 0.35;
+          const centerX = (leftEye[3].x + rightEye[0].x) / 2 - faceWidth * 0.6;
+          const centerY = nose[0].y - faceHeight * currentFilter.offsetY;
+
+          overlayCtx.drawImage(
+            currentFilter.image,
+            centerX - faceWidth / 2,
+            centerY - faceHeight / 2,
+            faceWidth,
+            faceHeight
+          );
+        });
+      }
+    }
+  } catch (error) {
+    console.error("Lỗi face detection:", error);
+  }
+
+  detectionInProgress = false;
+  animationFrameId = requestAnimationFrame(detectFacesLive);
 }
 
+// --- Xử lý đổi filter ---
 filterSelect.addEventListener("change", async () => {
+  // Dừng animation frame trước đó
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+  }
+
   selectedFilter = filterSelect.value;
 
   if (selectedFilter === "none") {
@@ -248,13 +253,36 @@ filterSelect.addEventListener("change", async () => {
     return;
   }
 
+  // Kiểm tra filter đã được tải chưa
+  const currentFilter = filterImages[selectedFilter];
+  if (!currentFilter || !currentFilter.image.complete) {
+    console.log(`⏳ Filter ${selectedFilter} chưa sẵn sàng, vui lòng chờ...`);
+    statusText.textContent = `Đang tải filter ${selectedFilter}...`;
+    statusText.style.display = "block";
+    
+    currentFilter.image.onload = () => {
+      statusText.style.display = "none";
+      initializeFilter();
+    };
+    return;
+  }
+
+  await initializeFilter();
+});
+
+async function initializeFilter() {
   if (!filterActive) {
-    await loadFaceModels();
+    const modelsLoaded = await loadFaceModels();
+    if (!modelsLoaded) return;
     filterActive = true;
   }
 
+  // Reset overlay
+  overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+  
+  // Bắt đầu detection
   detectFacesLive();
-});
+}
 
 // --- Chụp ảnh ---
 function captureFrame(index) {
@@ -267,12 +295,19 @@ function captureFrame(index) {
   ctx.translate(x + frameW, y);
   ctx.scale(-1, 1);
 
-  // Vẽ video + overlay filter
-  ctx.drawImage(video, 0, 0, frameW, frameH);
-  ctx.drawImage(overlay, 0, 0, frameW, frameH);
+  // Tính tỉ lệ scale để vẽ video + overlay lên canvas
+  const scaleX = frameW / video.videoWidth;
+  const scaleY = frameH / video.videoHeight;
   
+  // Vẽ video
+  ctx.drawImage(video, 0, 0, frameW, frameH);
+  
+  // Vẽ overlay với scaling chính xác
+  ctx.drawImage(overlay, 0, 0, video.videoWidth, video.videoHeight, 0, 0, frameW, frameH);
 
   ctx.restore();
+
+  // Vẽ grid và frame
   ctx.strokeStyle = frameColor;
   ctx.lineWidth = 10;
 
@@ -326,3 +361,20 @@ function startCapture() {
 }
 
 startBtn.addEventListener('click', startCapture);
+
+// --- Xử lý resize ---
+function handleResize() {
+  if (video.videoWidth > 0 && video.videoHeight > 0) {
+    overlay.width = video.videoWidth;
+    overlay.height = video.videoHeight;
+    
+    if (typeof faceapi !== 'undefined') {
+      const displaySize = { width: video.videoWidth, height: video.videoHeight };
+      faceapi.matchDimensions(overlay, displaySize);
+    }
+  }
+}
+
+video.addEventListener('loadedmetadata', handleResize);
+window.addEventListener('resize', handleResize);
+video.addEventListener('play', handleResize);
