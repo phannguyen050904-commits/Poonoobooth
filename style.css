@@ -57,15 +57,17 @@ header {
   font-size: 2rem;
   font-weight: bold;
   color: var(--primary);
- 
 }
+
 .instagram_icon {
   max-width: 3rem;
   max-height: 3rem;
 }
+
 .instagram_icon:hover {
   transform: scale(1.1);
 }
+
 main {
   flex: 1;
   max-width: 1200px;
@@ -79,12 +81,6 @@ main {
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
   margin-top: 2rem;
-}
-
-@media (max-width: 768px) {
-  .app-container {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* Camera preview */
@@ -112,7 +108,7 @@ main {
   overflow: hidden;
   background: #222;
   margin-bottom: 1.5rem;
-  position: relative; /* Thêm vào */
+  position: relative;
 }
 
 #video, #overlay {
@@ -120,7 +116,7 @@ main {
   height: 100%;
   object-fit: cover;
   transform: scaleX(-1);
-  position: absolute; /* Thêm vào */
+  position: absolute;
   top: 0;
   left: 0;
 }
@@ -156,7 +152,7 @@ main {
   display: block;
 }
 
-/* Controls - Đã chuyển sang camera section */
+/* Controls */
 .controls {
   display: flex;
   flex-direction: column;
@@ -184,7 +180,7 @@ main {
   border-radius: 8px;
   font-family: inherit;
   font-size: 1rem;
-  max-height: 1.5rem ;
+  max-height: 1.5rem;
 }
 
 .control-group input:focus,
@@ -278,9 +274,11 @@ footer {
 #themePreload {
   display: none;
 }
-/* Thêm vào cuối file style.css */
 
-/* Mobile styles */
+/* ==================== */
+/* MOBILE STYLES */
+/* ==================== */
+
 @media (max-width: 768px) {
   /* Header nhỏ lại */
   header {
@@ -307,6 +305,7 @@ footer {
   }
   
   .app-container {
+    grid-template-columns: 1fr;
     gap: 1rem;
     margin-top: 1rem;
   }
@@ -323,15 +322,14 @@ footer {
     margin-bottom: 0.75rem;
   }
   
-  /* QUAN TRỌNG: Video container nhỏ lại 1 nửa */
+  /* Video container nhỏ lại 1 nửa */
   .video-container {
-    width: 100%;
-    max-width: 240px; /* Giảm từ 480px xuống 240px */
-    height: 180px; /* Giảm từ 360px xuống 180px */
+    max-width: 240px;
+    height: 180px;
     margin-bottom: 1rem;
   }
   
-  /* Điều chỉnh canvas container tương ứng */
+  /* Canvas container tương ứng */
   .canvas-container {
     max-width: 240px;
   }
@@ -339,7 +337,7 @@ footer {
   /* Controls điều chỉnh */
   .controls {
     gap: 1rem;
-    max-width: 240px; /* Đồng bộ với video container */
+    max-width: 240px;
   }
   
   .control-group {
@@ -398,5 +396,39 @@ footer {
   .camera-section,
   .canvas-section {
     padding: 0.75rem;
+  }
+  
+  .control-group input,
+  .control-group select {
+    font-size: 0.8rem;
+  }
+  
+  .control-group label {
+    font-size: 0.8rem;
+  }
+}
+
+/* Cho màn hình cực nhỏ (iPhone SE, v.v.) */
+@media (max-width: 320px) {
+  .video-container {
+    max-width: 180px;
+    height: 135px;
+  }
+  
+  .canvas-container {
+    max-width: 180px;
+  }
+  
+  .controls {
+    max-width: 180px;
+  }
+  
+  .logo {
+    font-size: 1.1rem;
+  }
+  
+  .instagram_icon {
+    max-width: 1.5rem;
+    max-height: 1.5rem;
   }
 }
