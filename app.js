@@ -11,7 +11,7 @@ const countdownInput = document.getElementById('countdownTime');
 const themeSelect = document.getElementById('themeSelect');
 const filterSelect = document.getElementById('filterSelect');
 
-let frameColor = "#ffffff";
+let frameColor = "#000000";
 let currentTheme = "none";
 let selectedFilter = "none";
 let filterActive = false;
@@ -22,13 +22,46 @@ let animationFrameId = null;
 
 const rows = 3, cols = 2;
 const bottomPadding = 100;
-const frameW = canvas.width / cols;
-const frameH = (canvas.height - bottomPadding) / rows;
+let frameW, frameH;
+
+// --- Khởi tạo kích thước canvas ---
+function setupCanvasSize() {
+  const container = document.querySelector('.canvas-container');
+  
+  // Lấy kích thước thực tế của container
+  const containerWidth = container.clientWidth;
+  const containerHeight = containerWidth * (4/3); // Tỉ lệ 4:3
+  
+  canvas.width = containerWidth;
+  canvas.height = containerHeight;
+  
+  // Cập nhật lại grid dimensions
+  frameW = canvas.width / cols;
+  frameH = (canvas.height - bottomPadding) / rows;
+  
+  // Vẽ lại grid
+  drawGrid();
+}
 
 // --- Mở camera ---
-navigator.mediaDevices.getUserMedia({ video: true })
-  .then(stream => video.srcObject = stream)
-  .catch(err => console.error("Không mở được camera:", err));
+navigator.mediaDevices.getUserMedia({ 
+  video: { 
+    width: { ideal: 1280 },
+    height: { ideal: 720 }
+  } 
+})
+.then(stream => {
+  video.srcObject = stream;
+  video.onloadedmetadata = () => {
+    handleResize();
+    setupCanvasSize();
+  };
+})
+.catch(err => {
+  console.error("Không mở được camera:", err);
+  statusText.textContent = "❌ Lỗi camera! Vui lòng cho phép truy cập camera.";
+  statusText.style.display = "block";
+});
 
 // --- Preload themes và filters ---
 function preloadAssets() {
@@ -127,7 +160,6 @@ function drawGrid() {
 
   drawThemeOverlay();
 }
-drawGrid();
 
 // --- Đổi màu viền ---
 frameColorPicker.addEventListener("input", () => {
@@ -284,7 +316,7 @@ async function initializeFilter() {
   detectFacesLive();
 }
 
-// --- Chụp ảnh ---
+// --- Chụp ảnh (KHÔNG KÉO GIÃN) ---
 function captureFrame(index) {
   const row = Math.floor(index / cols);
   const col = index % cols;
@@ -293,7 +325,7 @@ function captureFrame(index) {
 
   ctx.save();
   
-  // Tính tỉ lệ scale để giữ nguyên tỉ lệ video
+  // Tính tỉ lệ scale để giữ nguyên tỉ lệ video (KHÔNG KÉO GIÃN)
   const videoAspect = video.videoWidth / video.videoHeight;
   const frameAspect = frameW / frameH;
   
@@ -313,7 +345,7 @@ function captureFrame(index) {
     offsetY = (frameH - drawHeight) / 2;
   }
 
-  // Vẽ video với tỉ lệ chính xác
+  // Vẽ video với tỉ lệ chính xác (KHÔNG KÉO GIÃN)
   ctx.translate(x + frameW, y);
   ctx.scale(-1, 1);
   ctx.drawImage(video, -offsetX, offsetY, drawWidth, drawHeight);
@@ -325,7 +357,7 @@ function captureFrame(index) {
 
   ctx.restore();
 
-  // Vẽ grid và frame (giữ nguyên)
+  // Vẽ grid và frame
   ctx.strokeStyle = frameColor;
   ctx.lineWidth = 10;
 
@@ -366,6 +398,7 @@ function startCapture() {
           statusText.style.display = "none";
         }, 3000);
 
+        // Tải ảnh về
         const link = document.createElement('a');
         link.download = 'photo_strip.png';
         link.href = canvas.toDataURL();
@@ -394,5 +427,12 @@ function handleResize() {
 }
 
 video.addEventListener('loadedmetadata', handleResize);
-window.addEventListener('resize', handleResize);
+window.addEventListener('resize', () => {
+  handleResize();
+  setupCanvasSize();
+});
+window.addEventListener('load', setupCanvasSize);
 video.addEventListener('play', handleResize);
+
+// Khởi tạo lần đầu
+setupCanvasSize();

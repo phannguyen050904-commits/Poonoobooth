@@ -51,21 +51,24 @@ header {
   gap: 3rem;
   align-items: center;
   flex-direction: row;
+  padding: 0 2rem;
 }
 
 .logo {
   font-size: 2rem;
   font-weight: bold;
   color: var(--primary);
- 
 }
+
 .instagram_icon {
   max-width: 3rem;
   max-height: 3rem;
 }
+
 .instagram_icon:hover {
   transform: scale(1.1);
 }
+
 main {
   flex: 1;
   max-width: 1200px;
@@ -106,7 +109,7 @@ main {
 
 .video-container {
   width: 100%;
-  aspect-ratio: 4/3; /* Giữ tỉ lệ 4:3 */
+  aspect-ratio: 4/3;
   max-width: 480px;
   border-radius: 12px;
   overflow: hidden;
@@ -144,19 +147,21 @@ main {
 
 .canvas-container {
   width: 100%;
+  aspect-ratio: 3/4;
   max-width: 480px;
   overflow: hidden;
   background: #eee;
   margin-bottom: 1.5rem;
+  position: relative;
 }
 
 #canvas {
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
 }
 
-/* Controls - Đã chuyển sang camera section */
+/* Controls */
 .controls {
   display: flex;
   flex-direction: column;
@@ -169,22 +174,24 @@ main {
   display: flex;
   flex-direction: row;
   gap: 0.5rem;
+  align-items: center;
 }
 
 .control-group label {
   font-size: 1rem;
   color: var(--text-light);
+  min-width: 120px;
 }
 
 .control-group input,
 .control-group select {
   text-align: center;
-  padding: 0rem;
+  padding: 0.5rem;
   border: 1px solid var(--border);
   border-radius: 8px;
   font-family: inherit;
   font-size: 1rem;
-  max-height: 1.5rem ;
+  flex: 1;
 }
 
 .control-group input:focus,
@@ -256,6 +263,7 @@ main {
   height: 50px;
   padding: 0.25rem;
   cursor: pointer;
+  flex: 0 0 80px;
 }
 
 /* Footer */
@@ -278,10 +286,11 @@ footer {
 #themePreload {
   display: none;
 }
+
 @media (max-width: 480px) {
   .video-container {
     max-width: 100%;
-    aspect-ratio: 4/3; /* Tỉ lệ dọc cho mobile */
+    aspect-ratio: 4/3; /* Giữ tỉ lệ ngang cho mobile */
   }
   
   .app-container {
@@ -291,5 +300,19 @@ footer {
   
   .camera-section, .canvas-section {
     padding: 1rem;
+  }
+  
+  .control-group {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .control-group label {
+    min-width: auto;
+  }
+  
+  .control-group input,
+  .control-group select {
+    width: 100%;
   }
 }
