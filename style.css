@@ -278,3 +278,125 @@ footer {
 #themePreload {
   display: none;
 }
+/* Thêm vào cuối file style.css */
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  /* Header nhỏ lại */
+  header {
+    padding: 1rem 0;
+  }
+  
+  .header-content {
+    padding: 0 1rem;
+    gap: 1rem;
+  }
+  
+  .logo {
+    font-size: 1.5rem;
+  }
+  
+  .instagram_icon {
+    max-width: 2rem;
+    max-height: 2rem;
+  }
+  
+  /* Điều chỉnh main content */
+  main {
+    padding: 1rem;
+  }
+  
+  .app-container {
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  
+  /* Camera và canvas sections */
+  .camera-section,
+  .canvas-section {
+    padding: 1rem;
+  }
+  
+  .camera-title,
+  .canvas-title {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  /* QUAN TRỌNG: Video container nhỏ lại 1 nửa */
+  .video-container {
+    width: 100%;
+    max-width: 240px; /* Giảm từ 480px xuống 240px */
+    height: 180px; /* Giảm từ 360px xuống 180px */
+    margin-bottom: 1rem;
+  }
+  
+  /* Điều chỉnh canvas container tương ứng */
+  .canvas-container {
+    max-width: 240px;
+  }
+  
+  /* Controls điều chỉnh */
+  .controls {
+    gap: 1rem;
+    max-width: 240px; /* Đồng bộ với video container */
+  }
+  
+  .control-group {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .control-group label {
+    font-size: 0.9rem;
+  }
+  
+  .control-group input,
+  .control-group select {
+    font-size: 0.9rem;
+    max-height: 2rem;
+    padding: 0.25rem;
+  }
+  
+  /* Nút chụp ảnh */
+  #start {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+  
+  #status {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* Cho màn hình rất nhỏ */
+@media (max-width: 480px) {
+  .logo {
+    font-size: 1.25rem;
+  }
+  
+  .instagram_icon {
+    max-width: 1.75rem;
+    max-height: 1.75rem;
+  }
+  
+  /* Video container thậm chí nhỏ hơn trên màn hình rất nhỏ */
+  .video-container {
+    max-width: 200px;
+    height: 150px;
+  }
+  
+  .canvas-container {
+    max-width: 200px;
+  }
+  
+  .controls {
+    max-width: 200px;
+  }
+  
+  .camera-section,
+  .canvas-section {
+    padding: 0.75rem;
+  }
+}
