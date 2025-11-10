@@ -292,22 +292,40 @@ function captureFrame(index) {
   const y = row * frameH;
 
   ctx.save();
+  
+  // Tính tỉ lệ scale để giữ nguyên tỉ lệ video
+  const videoAspect = video.videoWidth / video.videoHeight;
+  const frameAspect = frameW / frameH;
+  
+  let drawWidth, drawHeight, offsetX, offsetY;
+  
+  if (videoAspect > frameAspect) {
+    // Video rộng hơn frame -> fit theo chiều cao
+    drawHeight = frameH;
+    drawWidth = drawHeight * videoAspect;
+    offsetX = (frameW - drawWidth) / 2;
+    offsetY = 0;
+  } else {
+    // Video cao hơn frame -> fit theo chiều rộng
+    drawWidth = frameW;
+    drawHeight = drawWidth / videoAspect;
+    offsetX = 0;
+    offsetY = (frameH - drawHeight) / 2;
+  }
+
+  // Vẽ video với tỉ lệ chính xác
   ctx.translate(x + frameW, y);
   ctx.scale(-1, 1);
-
-  // Tính tỉ lệ scale để vẽ video + overlay lên canvas
-  const scaleX = frameW / video.videoWidth;
-  const scaleY = frameH / video.videoHeight;
+  ctx.drawImage(video, -offsetX, offsetY, drawWidth, drawHeight);
   
-  // Vẽ video
-  ctx.drawImage(video, 0, 0, frameW, frameH);
-  
-  // Vẽ overlay với scaling chính xác
-  ctx.drawImage(overlay, 0, 0, video.videoWidth, video.videoHeight, 0, 0, frameW, frameH);
+  // Vẽ overlay filter với cùng tỉ lệ
+  if (overlay.width > 0 && overlay.height > 0) {
+    ctx.drawImage(overlay, -offsetX, offsetY, drawWidth, drawHeight);
+  }
 
   ctx.restore();
 
-  // Vẽ grid và frame
+  // Vẽ grid và frame (giữ nguyên)
   ctx.strokeStyle = frameColor;
   ctx.lineWidth = 10;
 
