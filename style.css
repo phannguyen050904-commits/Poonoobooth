@@ -281,7 +281,7 @@ footer {
 @media (max-width: 480px) {
   .video-container {
     max-width: 100%;
-    aspect-ratio: 3/4; /* Tỉ lệ dọc cho mobile */
+    aspect-ratio: 4/3; /* Tỉ lệ dọc cho mobile */
   }
   
   .app-container {
