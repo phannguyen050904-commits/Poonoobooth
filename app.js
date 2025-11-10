@@ -377,39 +377,39 @@ function captureFrame(index) {
   drawThemeOverlay();
 }
 
-async function startCapture() {
+function startCapture() {
   startBtn.style.display = "none";
   statusText.style.display = "block";
   drawGrid();
 
-  const totalFrames = 6;
-  const delaySeconds = parseInt(countdownInput.value);
+  let count = 0;
+  let timeLeft = parseInt(countdownInput.value);
 
-  for (let i = 0; i < totalFrames; i++) {
-    let timeLeft = delaySeconds;
+  const timer = setInterval(() => {
+    if (timeLeft === 0) {
+      captureFrame(count);
+      count++;
 
-    while (timeLeft > 0) {
-      statusText.textContent = `Ảnh ${i + 1}/${totalFrames} chụp sau ${timeLeft--}s`;
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (count >= 6) {
+        clearInterval(timer);
+        statusText.textContent = "Tada!!!";
+        setTimeout(() => {
+          startBtn.style.display = "block";
+          statusText.style.display = "none";
+        }, 3000);
+
+        // Tải ảnh về
+        const link = document.createElement('a');
+        link.download = 'photo_strip.png';
+        link.href = canvas.toDataURL();
+        link.click();
+        return;
+      }
+      timeLeft = parseInt(countdownInput.value);
     }
-
-    captureFrame(i);
-  }
-
-  statusText.textContent = "Tada!!!";
-  await new Promise(resolve => setTimeout(resolve, 2000));
-
-  // Hiện nút lại
-  startBtn.style.display = "block";
-  statusText.style.display = "none";
-
-  // Tải ảnh về
-  const link = document.createElement('a');
-  link.download = 'photo_strip.png';
-  link.href = canvas.toDataURL();
-  link.click();
+    statusText.textContent = `Ảnh ${count + 1}/6 chụp sau ${timeLeft--}s`;
+  }, 1000);
 }
-
 
 startBtn.addEventListener('click', startCapture);
 
