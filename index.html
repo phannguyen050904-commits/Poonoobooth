@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  
   <header>
     <div class="header-content">
       <div class="logo">PooNoobooth</div>
@@ -29,7 +30,38 @@
     <div class="app-container">
       <!-- Camera -->
       <section class="camera-section">
-        <h2 class="camera-title">PooNoobooth</h2>
+        <h2 class="camera-title" id="cameraTitle">Ai mà xinh thế 😳</h2>
+
+<script>
+    const cameraTitles = [
+        "Xinh vãi ò",
+        "Con vợ xinh ác",
+        "Gương kia ngự ở trên tường...",
+        "Ig mình trên kia đó",
+        "Lạc vào khu rừng hoa🌼🌸🌺🏵️🌻🌷🌹"
+    ];
+
+        let previousIndex = -1;
+
+    function changeCameraTitle() {
+        const titleElement = document.getElementById('cameraTitle');
+        let newIndex;
+        
+        // Đảm bảo không trùng với title trước đó
+        do {
+            newIndex = Math.floor(Math.random() * cameraTitles.length);
+        } while (newIndex === previousIndex && cameraTitles.length > 1);
+        
+        titleElement.textContent = cameraTitles[newIndex];
+        previousIndex = newIndex;
+    }
+
+    // Thay đổi ngay khi load
+    changeCameraTitle();
+    
+    // Thay đổi mỗi 4 giây (random thực sự)
+    setInterval(changeCameraTitle, 4000);
+</script>
         <div class="video-container">
           <video id="video" autoplay playsinline></video>
           <canvas id="overlay" width="480" height="360"></canvas>
@@ -67,6 +99,11 @@
               <option value="Sơn Tùng-MTP">Sơn Tùng-MTP</option>
               <option value="T1 6 sao">T1 6 sao</option>
             </select>
+            <div class="control-group">
+              <label for="skinBrightness">Làm sáng da:</label>
+              <input type="range" id="skinBrightness" min="0" max="100" value="0" />
+              <span id="brightnessValue">0%</span>
+          </div>
           </div>
         </div>
       </section>

@@ -11,7 +11,7 @@ const countdownInput = document.getElementById('countdownTime');
 const themeSelect = document.getElementById('themeSelect');
 const filterSelect = document.getElementById('filterSelect');
 
-let frameColor = "#ffffff";
+let frameColor = "#4f6d8f";
 let currentTheme = "none";
 let selectedFilter = "none";
 let filterActive = false;
@@ -42,8 +42,8 @@ function preloadAssets() {
 
   // Preload filters
   const filters = [
-    { name: "Sơn Tùng-MTP", path: "filters/Sơn Tùng-MTP.png", offsetY: 3 },
-    { name: "T1 6 sao", path: "filters/T1 6 sao.png", offsetY: 2.9 }
+    { name: "Sơn Tùng-MTP", path: "filters/Sơn Tùng-MTP.png", offsetX:-0, offsetY: 2.75 },
+    { name: "T1 6 sao", path: "filters/T1 6 sao.png", offsetX:0, offsetY: 2.9 }
   ];
 
   filters.forEach(filter => {
@@ -54,7 +54,8 @@ function preloadAssets() {
     };
     filterImages[filter.name] = {
       image: img,
-      offsetY: filter.offsetY
+      offsetY: filter.offsetY,
+      offsetX: filter.offsetX
     };
   });
 }
@@ -217,7 +218,7 @@ async function detectFacesLive() {
 
           const faceWidth = Math.abs(rightEye[3].x - leftEye[0].x) * 2.2;
           const faceHeight = faceWidth * 0.35;
-          const centerX = (leftEye[3].x + rightEye[0].x) / 2 - faceWidth * 0.6;
+          const centerX = (leftEye[3].x + rightEye[0].x) / 2 - faceWidth * currentFilter.offsetX;
           const centerY = nose[0].y - faceHeight * currentFilter.offsetY;
 
           overlayCtx.drawImage(
