@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -23,7 +22,7 @@
       <a href="https://www.instagram.com/fuownguyen/" target="_blank" class="logoinstagram">
         <img src="icons/instagram_icon.png" class="instagram_icon" alt="Instagram">
       </a>
-    <div>
+    </div>
   </header>
 
   <main>
@@ -32,36 +31,33 @@
       <section class="camera-section">
         <h2 class="camera-title" id="cameraTitle">Ai mà xinh thế 😳</h2>
 
-<script>
-    const cameraTitles = [
-        "Xinh vãi ò",
-        "Con vợ xinh ác",
-        "Gương kia ngự ở trên tường...",
-        "Ig mình trên kia đó",
-        "Lạc vào khu rừng hoa🌼🌸🌺🏵️🌻🌷🌹"
-    ];
+        <script>
+          const cameraTitles = [
+            "Xinh vãi ò",
+            "Con vợ xinh ác",
+            "Gương kia ngự ở trên tường...",
+            "Ig mình trên kia đó",
+            "Lạc vào khu rừng hoa🌼🌸🌺🏵️🌻🌷🌹"
+          ];
 
-        let previousIndex = -1;
+          let previousIndex = -1;
 
-    function changeCameraTitle() {
-        const titleElement = document.getElementById('cameraTitle');
-        let newIndex;
-        
-        // Đảm bảo không trùng với title trước đó
-        do {
-            newIndex = Math.floor(Math.random() * cameraTitles.length);
-        } while (newIndex === previousIndex && cameraTitles.length > 1);
-        
-        titleElement.textContent = cameraTitles[newIndex];
-        previousIndex = newIndex;
-    }
+          function changeCameraTitle() {
+            const titleElement = document.getElementById('cameraTitle');
+            let newIndex;
+            
+            do {
+              newIndex = Math.floor(Math.random() * cameraTitles.length);
+            } while (newIndex === previousIndex && cameraTitles.length > 1);
+            
+            titleElement.textContent = cameraTitles[newIndex];
+            previousIndex = newIndex;
+          }
 
-    // Thay đổi ngay khi load
-    changeCameraTitle();
-    
-    // Thay đổi mỗi 4 giây (random thực sự)
-    setInterval(changeCameraTitle, 4000);
-</script>
+          changeCameraTitle();
+          setInterval(changeCameraTitle, 4000);
+        </script>
+
         <div class="video-container">
           <video id="video" autoplay playsinline></video>
           <canvas id="overlay" width="480" height="360"></canvas>
@@ -72,15 +68,59 @@
             <button id="start">Chụp ảnh</button>
             <div id="status">Đang chụp...</div>
           </div>
+          <div class="control-group">
+            <label for="timestampToggle">Hiển thị thời gian:</label>
+            <input type="checkbox" id="timestampToggle" checked />
+          </div>
+
+          <div class="timestamp-controls-container" id="timestampControls">
+            <div class="control-group">
+              <label for="timestampFormat">Định dạng:</label>
+              <select id="timestampFormat">
+                <option value="dd/mm/yyyy">DD/MM/YYYY</option>
+                <option value="mm/dd/yyyy">MM/DD/YYYY</option>
+                <option value="yyyy-mm-dd">YYYY-MM-DD</option>
+                <option value="full">Đầy đủ</option>
+                <option value="custom">Tùy chỉnh</option>
+              </select>
+            </div>
+
+            <div class="control-group">
+              <label for="timestampFont">Phông chữ:</label>
+              <select id="timestampFont">
+                <option value="FontTime">VCR_OSD_MONO</option>
+              </select>
+            </div>
+
+            <div class="control-group">
+              <label for="timestampSize">Cỡ chữ:</label>
+              <input type="number" id="timestampSize" min="10" max="50" value="16" />
+            </div>
+            <div class="control-group">
+              <label for="timestampPosition">Vị trí:</label>
+              <select id="timestampPosition">
+                <option value="top-left">Trên trái</option>
+                <option value="top-right">Trên phải</option>
+                <option value="bottom-left">Dưới trái</option>
+                <option value="bottom-right">Dưới phải</option>
+                <option value="bottom-center">Dưới giữa</option>
+              </select>
+            </div>
+
+            <div class="control-group" id="customFormatGroup" style="display: none;">
+              <label for="customFormat">Định dạng tùy chỉnh:</label>
+              <input type="text" id="customFormat" placeholder="DD-MM-YYYY HH:mm" />
+            </div>
+          </div>
 
           <div class="control-group">
             <label for="countdownTime">Đếm ngược (s):</label>
             <input type="number" id="countdownTime" min="1" max="10" value="5" />
           </div>
-          
+
           <div class="control-group">
             <label for="frameColor">Màu viền:</label>
-            <input type="color" id="frameColor" value="#000000" />
+            <input type="color" id="frameColor" value="#4f6d8f" />
           </div>
 
           <div class="control-group">
@@ -99,12 +139,25 @@
               <option value="Sơn Tùng-MTP">Sơn Tùng-MTP</option>
               <option value="T1 6 sao">T1 6 sao</option>
             </select>
-            <div class="control-group">
-              <label for="skinBrightness">Làm sáng da:</label>
-              <input type="range" id="skinBrightness" min="0" max="100" value="0" />
-              <span id="brightnessValue">0%</span>
           </div>
+
+          <div class="control-group">
+            <label for="grainSelect">Overlay</label>
+            <select id="grainSelect">
+              <option value="none">Không</option>
+              <option value="oldfilm">Old Film</option>
+              <option value="dustandscratches">Dust</option>
+              <option value="hardgrain">Hard Grain</option>
+            </select>
           </div>
+
+          <div class="control-group">
+            <label for="grainOpacity">Độ mờ overlay:</label>
+            <input type="range" id="grainOpacity" min="0" max="100" value="25" />
+            <span id="grainOpacityValue">25%</span>
+          </div>
+
+          
         </div>
       </section>
 
@@ -112,20 +165,13 @@
       <section class="canvas-section">
         <h2 class="canvas-title">Photo</h2>
         <div class="canvas-container">
-        </div>
-          <canvas id="overlay" width="480" height="640" style="position: absolute; top: 0; left: 0; pointer-events: none;"></canvas>
           <canvas id="canvas" width="480" height="640"></canvas>
         </div>
       </section>
     </div>
   </main>
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <script src="./face-api.min.js"></script>
-    <script src="./script.js"></script>
-  </head>
-  <script src="app.js"></script>
+  <script src="./face-api.min.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>
-
