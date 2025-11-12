@@ -179,12 +179,10 @@ async function loadFaceModels() {
 }
 
 // --- Hiển thị filter trực tiếp ---
-// --- Hiển thị filter trực tiếp ---
 async function detectFacesLive() {
   if (selectedFilter === "none") {
     overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
     drawGrainOverlay(); // ✅ Đảm bảo grain được vẽ ngay cả khi không có filter
-    drawTimestampOnOverlay(); // ✅ Vẽ timestamp lên overlay
     animationFrameId = requestAnimationFrame(detectFacesLive);
     return;
   }
@@ -197,7 +195,7 @@ async function detectFacesLive() {
   detectionInProgress = true;
 
   // Đảm bảo overlay có cùng kích thước với video
-  if (overlay.width !== video.videoWidth || overlay.height !== overlay.videoHeight) {
+  if (overlay.width !== video.videoWidth || overlay.height !== video.videoHeight) {
     overlay.width = video.videoWidth;
     overlay.height = video.videoHeight;
   }
@@ -237,10 +235,6 @@ async function detectFacesLive() {
         });
       }
     }
-
-    // ✅ VẼ TIMESTAMP LÊN OVERLAY (VIDEO TRỰC TIẾP)
-    drawTimestampOnOverlay();
-
   } catch (error) {
     console.error("Lỗi face detection:", error);
   }
@@ -248,8 +242,6 @@ async function detectFacesLive() {
   detectionInProgress = false;
   animationFrameId = requestAnimationFrame(detectFacesLive);
 }
-
-
 
 // --- Xử lý đổi filter ---
 filterSelect.addEventListener("change", async () => {
@@ -748,82 +740,3 @@ preloadFonts().then(() => {
 
 // Gọi hàm preload khi app khởi động
 preloadFonts();
-// --- Hàm vẽ timestamp lên overlay (video trực tiếp) ---
-function drawTimestampOnOverlay() {
-  if (!showTimestamp) return;
-  
-  const now = new Date();
-  const timestampText = formatTimestamp(now);
-  
-  // Kiểm tra font đã sẵn sàng chưa, nếu không dùng fallback
-  const fontFamily = document.fonts.check(`12px ${timestampFont}`) ? timestampFont : 'monospace';
-  
-  // Tính toán vị trí dựa trên selection
-  let posX, posY;
-  const padding = 10;
-  
-  // Vị trí cho overlay (không bị lật ngược)
-  switch (timestampPosition) {
-    case 'top-left':
-      posX = padding;
-      posY = padding + timestampSize;
-      break;
-    case 'top-right':
-      posX = overlay.width - padding;
-      posY = padding + timestampSize;
-      break;
-    case 'bottom-left':
-      posX = padding;
-      posY = overlay.height - padding;
-      break;
-    case 'bottom-right':
-      posX = overlay.width - padding;
-      posY = overlay.height - padding;
-      break;
-    case 'bottom-center':
-      posX = overlay.width / 2;
-      posY = overlay.height - padding;
-      break;
-    default:
-      posX = overlay.width - padding;
-      posY = overlay.height - padding;
-  }
-
-  // Căn chỉnh text
-  let textAlign;
-  switch (timestampPosition) {
-    case 'top-left':
-    case 'bottom-left':
-      textAlign = 'left';
-      break;
-    case 'top-right':
-    case 'bottom-right':
-      textAlign = 'right';
-      break;
-    case 'bottom-center':
-      textAlign = 'center';
-      break;
-    default:
-      textAlign = 'right';
-  }
-
-  overlayCtx.save();
-  
-  // Sử dụng font family đã được kiểm tra
-  overlayCtx.font = `${timestampSize}px ${fontFamily}`;
-  overlayCtx.fillStyle = timestampColor;
-  overlayCtx.textAlign = textAlign;
-  overlayCtx.textBaseline = 'bottom';
-  overlayCtx.strokeStyle = '#000000';
-  overlayCtx.lineWidth = 3;
-  overlayCtx.lineJoin = 'round';
-  
-  // Thêm shadow cho chữ dễ đọc
-  overlayCtx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-  overlayCtx.shadowBlur = 4;
-  overlayCtx.shadowOffsetX = 2;
-  overlayCtx.shadowOffsetY = 2;
-  
-  overlayCtx.fillText(timestampText, posX, posY);
-  overlayCtx.restore();
-}
