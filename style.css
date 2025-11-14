@@ -314,7 +314,25 @@ main {
   flex-direction: column;
   gap: 1rem;
 }
+/* Filter menu hierarchy styles */
+.filter-hierarchy {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
 
+.filter-category-group {
+  margin-bottom: 0.5rem;
+}
+
+.filter-subcategory-group {
+  margin-left: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.filter-select-group {
+  margin-left: 2rem;
+}
 /* ==================== */
 /* MOBILE STYLES */
 /* ==================== */

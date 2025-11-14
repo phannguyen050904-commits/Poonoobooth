@@ -42,7 +42,13 @@ function preloadAssets() {
 
   // Preload filters
   const filters = [
-    { name: "Sơn Tùng-MTP", path: "filters/Sơn Tùng-MTP.png", offsetX:-0, offsetY: 2.75 },
+    { name: "flower wreath", path: "filters/flower wreath.png", offsetX:0, offsetY:0.5, scale:2.3 },
+    { name: "cylinder", path: "filters/cylinder.png", offsetX:0, offsetY:0.7, scale:2.7 },
+    { name: "buffalo hat", path: "filters/buffalo hat.png", offsetX:0, offsetY:0.6, scale:3.6 },
+    { name: "winter hat", path: "filters/winter hat.png", offsetX:0, offsetY:0.65, scale:2.6 },
+    { name: "mũ đầu bếp", path: "filters/Mũ đầu bếp.png", offsetX:0, offsetY:0.65, scale:2.8 },
+    { name: "vòng hoa", path: "filters/vòng hoa.png", offsetX:0, offsetY:0.5, scale:2.6 },
+
     { name: "T1 6 sao", path: "filters/T1 6 sao.png", offsetX:0, offsetY: 2.9 }
   ];
 
@@ -55,7 +61,8 @@ function preloadAssets() {
     filterImages[filter.name] = {
       image: img,
       offsetY: filter.offsetY,
-      offsetX: filter.offsetX
+      offsetX: filter.offsetX,
+      scale: filter.scale || 1.0
     };
   });
 }
@@ -220,8 +227,10 @@ async function detectFacesLive() {
           const leftEye = landmarks.getLeftEye();
           const rightEye = landmarks.getRightEye();
 
-          const faceWidth = Math.abs(rightEye[3].x - leftEye[0].x) * 2.2;
-          const faceHeight = faceWidth * 0.35;
+          const baseFaceWidth = Math.abs(rightEye[3].x - leftEye[0].x);
+          const faceWidth = baseFaceWidth * (currentFilter.scale || 1.0); // Áp dụng scale
+          const faceHeight = faceWidth * 1; // Giữ tỉ lệ
+
           const centerX = (leftEye[3].x + rightEye[0].x) / 2 - faceWidth * currentFilter.offsetX;
           const centerY = nose[0].y - faceHeight * currentFilter.offsetY;
 
