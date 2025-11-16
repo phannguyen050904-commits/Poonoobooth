@@ -1,120 +1,303 @@
+/* app.js — cleaned & modular version
+   Preserves original behavior:
+   - Camera preview + overlay (filters drawn via face-api)
+   - Grain overlay (video textures)
+   - Preload fonts, themes, filters, grains
+   - Capture 6 frames into a 3x2 canvas photo strip with timestamp
+   - Controls: frame color, theme, filter, grain, grain opacity, timestamp options, countdown
+*/
+
+/* ===========================
+   Element references
+   =========================== */
 const video = document.getElementById('video');
 const overlay = document.getElementById('overlay');
 const overlayCtx = overlay.getContext('2d');
+
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
 const startBtn = document.getElementById('start');
 const statusText = document.getElementById('status');
+
 const frameColorPicker = document.getElementById('frameColor');
 const countdownInput = document.getElementById('countdownTime');
 const themeSelect = document.getElementById('themeSelect');
-const filterSelect = document.getElementById('filterSelect');
+const grainSelect = document.getElementById('grainSelect');
+const grainOpacitySlider = document.getElementById('grainOpacity');
+const grainOpacityValue = document.getElementById('grainOpacityValue');
 
-let frameColor = "#4f6d8f";
-let currentTheme = "none";
-let selectedFilter = "none";
+const timestampControls = document.getElementById('timestampControls');
+/* timestamp controls exist in DOM with ids used below */
+const timestampToggle = document.getElementById('timestampToggle');
+const timestampFormatSel = document.getElementById('timestampFormat');
+const timestampFontSel = document.getElementById('timestampFont');
+const timestampSizeInput = document.getElementById('timestampSize');
+const timestampColorInput = document.getElementById('timestampColor') || null; // optional in DOM
+const timestampPositionSel = document.getElementById('timestampPosition');
+const customFormatInput = document.getElementById('customFormat');
+const customFormatGroup = document.getElementById('customFormatGroup');
+const filterSelect = document.getElementById('filterSelect');
+const filterSelected = filterSelect.querySelector('.selected');
+const filterOptions = filterSelect.querySelectorAll('.select-menu > li:not(.dst-parent)');
+const dstOptions = filterSelect.querySelectorAll('.dst-submenu li');
+
+
+/* ===========================
+   App state
+   =========================== */
+let frameColor = '#4f6d8f';
+let currentTheme = 'none';
+let selectedFilter = 'none';
 let filterActive = false;
-let themeImages = {};
-let filterImages = {};
+
+let themeImages = {};   // { name: Image }
+let filterImages = {};  // { name: { image, offsetX, offsetY, scale } }
+
+let grainVideos = {};   // { name: HTMLVideoElement }
+let currentGrain = 'none';
+let grainOpacity = 0.25;
+
 let detectionInProgress = false;
 let animationFrameId = null;
+let faceModelsLoaded = false;
 
-const rows = 3, cols = 2;
+/* Canvas grid layout (3 rows x 2 cols) */
+const rows = 3;
+const cols = 2;
 const bottomPadding = 100;
 const frameW = canvas.width / cols;
 const frameH = (canvas.height - bottomPadding) / rows;
 
-// --- Mở camera ---
-navigator.mediaDevices.getUserMedia({ video: true })
-  .then(stream => video.srcObject = stream)
-  .catch(err => console.error("Không mở được camera:", err));
+/* Timestamp state */
+let showTimestamp = true;
+let timestampFormat = 'dd/mm/yyyy';
+let timestampFont = 'FontTime';
+let timestampSize = 16;
+let timestampColor = '#ffffff';
+let timestampPosition = 'bottom-right';
+let customTimestampFormat = '';
 
-// --- Preload themes và filters ---
-function preloadAssets() {
-  // Preload themes
-  const themes = ['Đi làm', 'Danisa'];
-  themes.forEach(theme => {
+/* ===========================
+   Utilities
+   =========================== */
+const $ = id => document.getElementById(id);
+
+function safeLog(...args) { console.log(...args); }
+function safeErr(...args) { console.error(...args); }
+
+/* ===========================
+   Camera setup
+   =========================== */
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = stream;
+  } catch (err) {
+    safeErr('Cannot access camera:', err);
+  }
+}
+startCamera();
+
+/* ===========================
+   Preloaders: themes, filters, grains, fonts
+   =========================== */
+function preloadThemes() {
+  const themes = ['Đi làm', 'Danisa','Dont starve together 1'];
+  themes.forEach(name => {
     const img = new Image();
-    img.src = `themes/${theme}.png`;
-    themeImages[theme] = img;
+    img.src = `themes/${name}.png`;
+    themeImages[name] = img;
+    img.addEventListener('load', () => safeLog(`Theme loaded: ${name}`));
   });
+}
 
-  // Preload filters
+function preloadFilters() {
   const filters = [
-    { name: "flower wreath", path: "filters/flower wreath.png", offsetX:0, offsetY:0.5, scale:2.3 },
-    { name: "cylinder", path: "filters/cylinder.png", offsetX:0, offsetY:0.7, scale:2.7 },
-    { name: "buffalo hat", path: "filters/buffalo hat.png", offsetX:0, offsetY:0.6, scale:3.6 },
-    { name: "winter hat", path: "filters/winter hat.png", offsetX:0, offsetY:0.65, scale:2.6 },
-    { name: "mũ đầu bếp", path: "filters/Mũ đầu bếp.png", offsetX:0, offsetY:0.65, scale:2.8 },
-    { name: "vòng hoa", path: "filters/vòng hoa.png", offsetX:0, offsetY:0.5, scale:2.6 },
+    { name: "flower wreath", path: "filters/Don't starve together/flower wreath.png", offsetX: 0, offsetY: 0.5, scale: 2.3 },
+    { name: "cylinder", path: "filters/Don't starve together/cylinder.png", offsetX: 0, offsetY: 0.7, scale: 2.7 },
+    { name: "buffalo hat", path: "filters/Don't starve together/buffalo hat.png", offsetX: 0, offsetY: 0.6, scale: 3.6 },
+    { name: "winter hat", path: "filters/Don't starve together/winter hat.png", offsetX: 0, offsetY: 0.65, scale: 2.6 },
+    { name: "straw hat", path: "filters/Don't starve together/winter hat.png", offsetX: 0, offsetY: 0.65, scale: 2.6 },
+    { name: "mũ đầu bếp", path: "filters/Mũ đầu bếp.png", offsetX: 0, offsetY: 0.65, scale: 2.8 },
+    { name: "vòng hoa", path: "filters/vòng hoa.png", offsetX: 0, offsetY: 0.5, scale: 2.6 },
+    { name: "T1 6 sao", path: "filters/T1 6 sao.png", offsetX: 0, offsetY: 2.9, scale: 1.0 },
+    { name: "hat art 1", path: "filters/Oxygen not includ/hat art 1.png", offsetX: 0.05, offsetY: 0.8, scale: 2.25 },
+    { name: "hat art 2", path: "filters/Oxygen not includ/hat art 2.png", offsetX: 0.05, offsetY: 0.8, scale: 2.25 },
+    { name: "hat art 3", path: "filters/Oxygen not includ/hat art 3.png", offsetX: 0.05, offsetY: 0.75, scale: 2.25 },
+    { name: "hat astronut 1", path: "filters/Oxygen not includ/hat astronut 1.png", offsetX: -0.1, offsetY: 0.25, scale: 2.7 },
+    { name: "hat astronut 2", path: "filters/Oxygen not includ/hat astronut 2.png", offsetX: -0.1, offsetY: 0.25, scale: 2.7 },
+    { name: "hat basekeeping 1", path: "filters/Oxygen not includ/hat basekeeping 1.png", offsetX: 0.05, offsetY: 0.75, scale: 2.25 },
+    { name: "hat basekeeping 2", path: "filters/Oxygen not includ/hat basekeeping 2.png", offsetX: 0.05, offsetY: 0.75, scale: 2.25 },
+    { name: "hat building 1", path: "filters/Oxygen not includ/hat building 1.png", offsetX: 0.05, offsetY: 0.75, scale: 2.25 },
+    { name: "hat building 2", path: "filters/Oxygen not includ/hat building 2.png", offsetX: 0.05, offsetY: 0.75, scale: 2.25 },
+    { name: "hat building 3", path: "filters/Oxygen not includ/hat building 3.png", offsetX: 0.05, offsetY: 0.75, scale: 2.25 },
+    { name: "hat cooking 1", path: "filters/Oxygen not includ/hat cooking 1.png", offsetX: 0.05, offsetY: 0.8, scale: 2.1 },
+    { name: "hat cooking 2", path: "filters/Oxygen not includ/hat cooking 2.png", offsetX: 0.05, offsetY: 0.8, scale: 2.1 },
+    { name: "hat engineering", path: "filters/Oxygen not includ/hat cooking 3.png", offsetX: 0.05, offsetY: 0.75, scale: 2.25 },
+    { name: "hat farming 1", path: "filters/Oxygen not includ/hat farming 1.png", offsetX: 0, offsetY: 0.85, scale: 2.75 },
+    { name: "hat farming 2", path: "filters/Oxygen not includ/hat farming 2.png", offsetX: 0, offsetY: 0.85, scale: 2.75 },
+    { name: "hat farming 3", path: "filters/Oxygen not includ/hat farming 3.png", offsetX: 0, offsetY: 0.85, scale: 2.7 },
+    { name: "hat hauling 1", path: "filters/Oxygen not includ/hat hauling 1.png", offsetX: 0.05, offsetY: 0.8, scale: 2.25 },
+    { name: "hat hauling 2", path: "filters/Oxygen not includ/hat hauling 2.png", offsetX: 0.05, offsetY: 0.8, scale: 2.25 },
+    { name: "hat medicalaid 1", path: "filters/Oxygen not includ/hat medicalaid 1.png", offsetX: -0.05, offsetY: 0.6, scale: 2.3 },
+    { name: "hat medicalaid 2", path: "filters/Oxygen not includ/hat medicalaid 2.png", offsetX: -0.05, offsetY: 0.6, scale: 2.3 },
+    { name: "hat medicalaid 3", path: "filters/Oxygen not includ/hat medicalaid 3.png", offsetX: -0.05, offsetY: 0.6, scale: 2.3 },
+    { name: "hat mining 1", path: "filters/Oxygen not includ/hat mining 1.png", offsetX: -0.05, offsetY: 0.85, scale: 2.6 },
+    { name: "hat mining 2", path: "filters/Oxygen not includ/hat mining 2.png", offsetX: -0.05, offsetY: 0.85, scale: 2.6 },
+    { name: "hat mining 3", path: "filters/Oxygen not includ/hat mining 3.png", offsetX: -0.05, offsetY: 0.85, scale: 2.6 },
+    { name: "hat mining 4", path: "filters/Oxygen not includ/hat mining 4.png", offsetX: -0.05, offsetY: 0.85, scale: 2.6 },
+     { name: "hat rancher 1", path: "filters/Oxygen not includ/hat rancher 1.png", offsetX: -0.05, offsetY: 0.85, scale: 2.7 },
+    { name: "hat rancher 2", path: "filters/Oxygen not includ/hat rancher 2.png", offsetX: -0.05, offsetY: 0.885, scale: 2.7 },
+     { name: "hat suit 1", path: "filters/Oxygen not includ/hat suit 1.png", offsetX: 0, offsetY: 0.6, scale: 2.35 },
+    { name: "hat suit 2", path: "filters/Oxygen not includ/hat suit 2.png", offsetX: 0, offsetY: 0.6, scale: 2.35 },
+     { name: "hat technical 1", path: "filters/Oxygen not includ/hat technical 1.png", offsetX: 0.05, offsetY: 0.85, scale: 2.3 },
+    { name: "hat technical 2", path: "filters/Oxygen not includ/hat technical 2.png", offsetX: 0.05, offsetY: 0.85, scale: 2.3 },
 
-    { name: "T1 6 sao", path: "filters/T1 6 sao.png", offsetX:0, offsetY: 2.9 }
   ];
 
-  filters.forEach(filter => {
+  filters.forEach(f => {
     const img = new Image();
-    img.src = filter.path;
-    img.onload = () => {
-      console.log(`✅ Filter ${filter.name} loaded`);
-    };
-    filterImages[filter.name] = {
-      image: img,
-      offsetY: filter.offsetY,
-      offsetX: filter.offsetX,
-      scale: filter.scale || 1.0
-    };
+    img.src = f.path;
+    filterImages[f.name] = { image: img, offsetX: f.offsetX, offsetY: f.offsetY, scale: f.scale || 1.0 };
+    img.addEventListener('load', () => safeLog(`Filter loaded: ${f.name}`));
+    img.addEventListener('error', () => safeErr(`Filter failed: ${f.name}`));
   });
 }
-preloadAssets();
 
-// --- Vẽ khung viền ---
-function drawOuterFrame() {
-  const outerLineWidth = 10;
-  const bottomLineWidth = 100;
-  const topLineWidth = 10;
-  ctx.strokeStyle = frameColor;
+function preloadGrains() {
+  const grains = [
+    { name: "oldfilm", path: "textures/Old Film.mp4" },
+    { name: "dustandscratches", path: "textures/dustandscratches.mp4" },
+    { name: "hardgrain", path: "textures/hardgrain.mp4" },
+  ];
 
-  ctx.lineWidth = outerLineWidth;
-  ctx.beginPath();
-  ctx.moveTo(outerLineWidth / 2, outerLineWidth / 2);
-  ctx.lineTo(canvas.width - outerLineWidth / 2, outerLineWidth / 2);
-  ctx.moveTo(outerLineWidth / 2, outerLineWidth / 2);
-  ctx.lineTo(outerLineWidth / 2, canvas.height - outerLineWidth / 2);
-  ctx.moveTo(canvas.width - outerLineWidth / 2, outerLineWidth / 2);
-  ctx.lineTo(canvas.width - outerLineWidth / 2, canvas.height - outerLineWidth / 2);
-  ctx.stroke();
-
-  ctx.lineWidth = bottomLineWidth;
-  ctx.beginPath();
-  ctx.moveTo(0, canvas.height - bottomLineWidth / 2);
-  ctx.lineTo(canvas.width, canvas.height - bottomLineWidth / 2);
-  ctx.stroke();
-  
-  ctx.lineWidth = topLineWidth;
-  ctx.beginPath();
-  ctx.moveTo(0, topLineWidth / 2);
-  ctx.lineTo(canvas.width, topLineWidth / 2);
-  ctx.stroke();
+  grains.forEach(g => {
+    const v = document.createElement('video');
+    v.src = g.path;
+    v.loop = true;
+    v.muted = true;
+    v.playsInline = true;
+    v.preload = 'auto';
+    v.addEventListener('loadeddata', () => {
+      safeLog(`Grain loaded: ${g.name}`);
+      v.play().catch(() => {}); // autoplay may be blocked until user interacts
+    });
+    grainVideos[g.name] = v;
+  });
 }
 
-// --- Vẽ theme overlay ---
-function drawThemeOverlay() {
-  if (currentTheme !== "none" && themeImages[currentTheme]) {
-    const img = themeImages[currentTheme];
-    if (img.complete && img.naturalHeight !== 0) {
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+async function preloadFonts() {
+  const fontsToLoad = ['16px FontTime', '20px FontTime'];
+  try {
+    await Promise.all(fontsToLoad.map(f => document.fonts.load(f)));
+    safeLog('Fonts loaded');
+  } catch (err) {
+    safeErr('Font loading failed:', err);
+  }
+}
+
+/* Single entrypoint to preload assets */
+function preloadAll() {
+  preloadThemes();
+  preloadFilters();
+  preloadGrains();
+  preloadFonts();
+}
+preloadAll();
+
+/* ===========================
+   Face-api model loader (with CDN fallback)
+   =========================== */
+async function loadFaceModels() {
+  if (faceModelsLoaded) return true;
+  if (typeof faceapi === 'undefined') {
+    safeErr('face-api not present');
+    return false;
+  }
+
+  try {
+    safeLog('Loading face models from /models ...');
+    await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+    await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+    await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
+    await faceapi.nets.faceExpressionNet.loadFromUri('/models');
+    faceModelsLoaded = true;
+    safeLog('Face models loaded (local)');
+    return true;
+  } catch (err) {
+    safeErr('Local models failed, trying CDN:', err);
+    try {
+      const base = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+      await faceapi.nets.tinyFaceDetector.loadFromUri(base);
+      await faceapi.nets.faceLandmark68Net.loadFromUri(base);
+      await faceapi.nets.faceRecognitionNet.loadFromUri(base);
+      await faceapi.nets.faceExpressionNet.loadFromUri(base);
+      faceModelsLoaded = true;
+      safeLog('Face models loaded (CDN)');
+      return true;
+    } catch (cdnErr) {
+      safeErr('Failed to load face models:', cdnErr);
+      statusText.textContent = '❌ Lỗi tải mô hình nhận diện';
+      return false;
     }
   }
 }
 
-// --- Vẽ lưới ---
-function drawGrid() {
-  ctx.fillStyle = "#eee";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.strokeStyle = frameColor;
+/* ===========================
+   Drawing helpers: grid, frame, theme
+   =========================== */
 
-  drawOuterFrame();
+function drawOuterFrameTo(ctxRef) {
+  const outerLineWidth = 10;
+  const bottomLineWidth = 100;
+  const topLineWidth = 10;
+
+  ctxRef.strokeStyle = frameColor;
+
+  // Outer rectangles (left and right lines)
+  ctxRef.lineWidth = outerLineWidth;
+  ctxRef.beginPath();
+  ctxRef.moveTo(outerLineWidth / 2, outerLineWidth / 2);
+  ctxRef.lineTo(canvas.width - outerLineWidth / 2, outerLineWidth / 2);
+  ctxRef.moveTo(outerLineWidth / 2, outerLineWidth / 2);
+  ctxRef.lineTo(outerLineWidth / 2, canvas.height - outerLineWidth / 2);
+  ctxRef.moveTo(canvas.width - outerLineWidth / 2, outerLineWidth / 2);
+  ctxRef.lineTo(canvas.width - outerLineWidth / 2, canvas.height - outerLineWidth / 2);
+  ctxRef.stroke();
+
+  // Bottom thick line
+  ctxRef.lineWidth = bottomLineWidth;
+  ctxRef.beginPath();
+  ctxRef.moveTo(0, canvas.height - bottomLineWidth / 2);
+  ctxRef.lineTo(canvas.width, canvas.height - bottomLineWidth / 2);
+  ctxRef.stroke();
+
+  // Top thin line
+  ctxRef.lineWidth = topLineWidth;
+  ctxRef.beginPath();
+  ctxRef.moveTo(0, topLineWidth / 2);
+  ctxRef.lineTo(canvas.width, topLineWidth / 2);
+  ctxRef.stroke();
+}
+
+function drawThemeOverlayTo(ctxRef) {
+  if (currentTheme !== 'none' && themeImages[currentTheme]) {
+    const img = themeImages[currentTheme];
+    if (img.complete && img.naturalHeight > 0) {
+      ctxRef.drawImage(img, 0, 0, canvas.width, canvas.height);
+    }
+  }
+}
+
+function drawGrid() {
+  // base background
+  ctx.fillStyle = '#eee';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // main strokes
+  ctx.strokeStyle = frameColor;
+  drawOuterFrameTo(ctx);
 
   const innerLineWidth = 10;
   ctx.lineWidth = innerLineWidth;
@@ -125,7 +308,6 @@ function drawGrid() {
     ctx.lineTo(i * frameW, canvas.height);
     ctx.stroke();
   }
-
   for (let i = 1; i < rows; i++) {
     ctx.beginPath();
     ctx.moveTo(0, i * frameH);
@@ -133,63 +315,46 @@ function drawGrid() {
     ctx.stroke();
   }
 
-  drawThemeOverlay();
+  drawThemeOverlayTo(ctx);
 }
-drawGrid();
 
-// --- Đổi màu viền ---
-frameColorPicker.addEventListener("input", () => {
-  frameColor = frameColorPicker.value;
-  drawGrid();
-});
-
-// --- Đổi theme ---
-themeSelect.addEventListener("change", () => {
-  currentTheme = themeSelect.value;
-  drawGrid();
-});
-
-// --- Tải mô hình nhận diện ---
-async function loadFaceModels() {
-  try {
-    console.log("🔄 Đang tải mô hình nhận diện...");
-    
-    if (typeof faceapi === 'undefined') {
-      throw new Error("face-api.js chưa được tải");
+/* ===========================
+   Grain overlay (video) helpers
+   =========================== */
+function drawGrainOverlay() {
+  if (currentGrain !== 'none' && grainVideos[currentGrain]) {
+    const v = grainVideos[currentGrain];
+    if (v.readyState >= v.HAVE_CURRENT_DATA) {
+      overlayCtx.globalAlpha = grainOpacity;
+      overlayCtx.drawImage(v, 0, 0, overlay.width, overlay.height);
+      overlayCtx.globalAlpha = 1.0;
     }
+  } else {
+    // ensure overlay cleared if none selected
+    overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+  }
+}
 
-    await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
-    await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
-    await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
-    await faceapi.nets.faceExpressionNet.loadFromUri('/models');
-    
-    console.log("✅ Face models loaded");
-    return true;
-  } catch (error) {
-    console.error("❌ Lỗi tải models:", error);
-    
-    try {
-      console.log("🔄 Thử tải từ CDN...");
-      await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
-      await faceapi.nets.faceLandmark68Net.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
-      await faceapi.nets.faceRecognitionNet.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
-      await faceapi.nets.faceExpressionNet.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
-      
-      console.log("✅ Models loaded from CDN");
-      return true;
-    } catch (cdnError) {
-      console.error("❌ Lỗi tải từ CDN:", cdnError);
-      statusText.textContent = "❌ Lỗi tải mô hình nhận diện";
-      return false;
+function drawGrainOnCanvas(context, x, y, width, height) {
+  if (currentGrain !== 'none' && grainVideos[currentGrain]) {
+    const v = grainVideos[currentGrain];
+    if (v.readyState >= v.HAVE_CURRENT_DATA) {
+      context.globalAlpha = grainOpacity;
+      context.drawImage(v, x, y, width, height);
+      context.globalAlpha = 1.0;
     }
   }
 }
 
-// --- Hiển thị filter trực tiếp ---
+/* ===========================
+   Face detection & filter rendering loop
+   =========================== */
+
 async function detectFacesLive() {
-  if (selectedFilter === "none") {
+  // If no filter chosen, just draw grain (if any) and loop
+  if (selectedFilter === 'none') {
     overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
-    drawGrainOverlay(); // ✅ Đảm bảo grain được vẽ ngay cả khi không có filter
+    drawGrainOverlay(); 
     animationFrameId = requestAnimationFrame(detectFacesLive);
     return;
   }
@@ -201,7 +366,7 @@ async function detectFacesLive() {
 
   detectionInProgress = true;
 
-  // Đảm bảo overlay có cùng kích thước với video
+  // keep overlay same size as video
   if (overlay.width !== video.videoWidth || overlay.height !== video.videoHeight) {
     overlay.width = video.videoWidth;
     overlay.height = video.videoHeight;
@@ -214,12 +379,11 @@ async function detectFacesLive() {
 
     overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
 
-    // Vẽ grain overlay TRƯỚC khi vẽ filter
+    // draw grain first
     drawGrainOverlay();
 
-    if (detections.length > 0 && selectedFilter !== "none") {
+    if (detections && detections.length > 0 && selectedFilter !== 'none') {
       const currentFilter = filterImages[selectedFilter];
-      
       if (currentFilter && currentFilter.image.complete) {
         detections.forEach(d => {
           const landmarks = d.landmarks;
@@ -227,12 +391,16 @@ async function detectFacesLive() {
           const leftEye = landmarks.getLeftEye();
           const rightEye = landmarks.getRightEye();
 
+          // base face width estimation using eyes
           const baseFaceWidth = Math.abs(rightEye[3].x - leftEye[0].x);
-          const faceWidth = baseFaceWidth * (currentFilter.scale || 1.0); // Áp dụng scale
-          const faceHeight = faceWidth * 1; // Giữ tỉ lệ
+          const faceWidth = baseFaceWidth * (currentFilter.scale || 1.0);
+          // Tự động giữ tỷ lệ ảnh gốc
+          const img = currentFilter.image;
+          const originalAspectRatio = img.naturalWidth / img.naturalHeight;
+          const faceHeight = faceWidth / originalAspectRatio;
 
-          const centerX = (leftEye[3].x + rightEye[0].x) / 2 - faceWidth * currentFilter.offsetX;
-          const centerY = nose[0].y - faceHeight * currentFilter.offsetY;
+          const centerX = (leftEye[3].x + rightEye[0].x) / 2 - faceWidth * (currentFilter.offsetX || 0);
+          const centerY = nose[0].y - faceHeight * (currentFilter.offsetY || 0);
 
           overlayCtx.drawImage(
             currentFilter.image,
@@ -244,61 +412,106 @@ async function detectFacesLive() {
         });
       }
     }
-  } catch (error) {
-    console.error("Lỗi face detection:", error);
+  } catch (err) {
+    safeErr('Face detection error:', err);
   }
 
   detectionInProgress = false;
   animationFrameId = requestAnimationFrame(detectFacesLive);
 }
 
-// --- Xử lý đổi filter ---
-filterSelect.addEventListener("change", async () => {
-  // Dừng animation frame trước đó
-  if (animationFrameId) {
-    cancelAnimationFrame(animationFrameId);
-  }
-
-  selectedFilter = filterSelect.value;
-
-  if (selectedFilter === "none") {
-    filterActive = false;
-    overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
-    return;
-  }
-
-  // Kiểm tra filter đã được tải chưa
-  const currentFilter = filterImages[selectedFilter];
-  if (!currentFilter || !currentFilter.image.complete) {
-    console.log(`⏳ Filter ${selectedFilter} chưa sẵn sàng, vui lòng chờ...`);
-    statusText.textContent = `Đang tải filter ${selectedFilter}...`;
-    statusText.style.display = "block";
-    
-    currentFilter.image.onload = () => {
-      statusText.style.display = "none";
-      initializeFilter();
-    };
-    return;
-  }
-
-  await initializeFilter();
-});
-
+/* Initialize filter (loads models once and starts detection loop) */
 async function initializeFilter() {
   if (!filterActive) {
-    const modelsLoaded = await loadFaceModels();
-    if (!modelsLoaded) return;
+    const ok = await loadFaceModels();
+    if (!ok) return;
     filterActive = true;
   }
 
-  // Reset overlay
+  // reset overlay then start loop
   overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
-  
-  // Bắt đầu detection
   detectFacesLive();
 }
 
-// --- Chụp ảnh ---
+/* ===========================
+   Capture logic (3x2 photo strip)
+   =========================== */
+
+function formatTimestamp(date) {
+  const DD = String(date.getDate()).padStart(2, '0');
+  const MM = String(date.getMonth() + 1).padStart(2, '0');
+  const YYYY = date.getFullYear();
+  const HH = String(date.getHours()).padStart(2, '0');
+  const mm = String(date.getMinutes()).padStart(2, '0');
+  const ss = String(date.getSeconds()).padStart(2, '0');
+
+  switch (timestampFormat) {
+    case 'dd/mm/yyyy': return `${DD}/${MM}/${YYYY}`;
+    case 'mm/dd/yyyy': return `${MM}/${DD}/${YYYY}`;
+    case 'yyyy-mm-dd': return `${YYYY}-${MM}-${DD}`;
+    case 'full': return `${DD}/${MM}/${YYYY} ${HH}:${mm}:${ss}`;
+    case 'custom':
+      if (!customTimestampFormat) return `${DD}/${MM}/${YYYY}`;
+      return customTimestampFormat
+        .replace('DD', DD).replace('MM', MM).replace('YYYY', YYYY)
+        .replace('HH', HH).replace('mm', mm).replace('ss', ss);
+    default: return `${DD}/${MM}/${YYYY}`;
+  }
+}
+
+function drawTimestamp(context, x, y, width, height) {
+  if (!showTimestamp) return;
+
+  const now = new Date();
+  const text = formatTimestamp(now);
+
+  // fallback font family check
+  const fontFamily = document.fonts && document.fonts.check && document.fonts.check(`12px ${timestampFont}`) ? timestampFont : 'monospace';
+
+  // compute position (account for flip applied during capture)
+  const padding = 10;
+  let posX, posY, align;
+  switch (timestampPosition) {
+    case 'top-left':
+      posX = width - padding; posY = padding + timestampSize; align = 'right';
+      break;
+    case 'top-right':
+      posX = padding; posY = padding + timestampSize; align = 'left';
+      break;
+    case 'bottom-left':
+      posX = width - padding; posY = height - padding; align = 'right';
+      break;
+    case 'bottom-right':
+      posX = padding; posY = height - padding; align = 'left';
+      break;
+    case 'bottom-center':
+      posX = width / 2; posY = height - padding; align = 'center';
+      break;
+    default:
+      posX = padding; posY = height - padding; align = 'left';
+  }
+
+  context.save();
+  // flip horizontally so text appears correct after canvas horizontal flip
+  context.translate(width, 0);
+  context.scale(-1, 1);
+
+  context.font = `${timestampSize}px ${fontFamily}`;
+  context.fillStyle = timestampColor;
+  context.textAlign = align;
+  context.textBaseline = 'bottom';
+  context.lineWidth = 3;
+  context.strokeStyle = '#000';
+  context.lineJoin = 'round';
+  context.shadowColor = 'rgba(0,0,0,0.7)';
+  context.shadowBlur = 4;
+  context.shadowOffsetX = 2;
+  context.shadowOffsetY = 2;
+
+  context.fillText(text, posX, posY);
+  context.restore();
+}
+
 function captureFrame(index) {
   const row = Math.floor(index / cols);
   const col = index % cols;
@@ -306,28 +519,27 @@ function captureFrame(index) {
   const y = row * frameH;
 
   ctx.save();
+  // flip capture area horizontally to mirror selfie like video preview
   ctx.translate(x + frameW, y);
   ctx.scale(-1, 1);
 
-  // Tính tỉ lệ scale để vẽ video + overlay lên canvas
-  const scaleX = frameW / video.videoWidth;
-  const scaleY = frameH / video.videoHeight;
-  
-  // Vẽ video
+  // draw video scaled into frame
   ctx.drawImage(video, 0, 0, frameW, frameH);
-  
-  // Vẽ overlay với scaling chính xác
+
+  // draw overlay scaled correctly (overlay is same natural size as video)
   ctx.drawImage(overlay, 0, 0, video.videoWidth, video.videoHeight, 0, 0, frameW, frameH);
-  
-  // Vẽ grain với opacity hiện tại
+
+  // draw grain on this frame
   drawGrainOnCanvas(ctx, 0, 0, frameW, frameH);
+
+  // draw timestamp for this frame
+  drawTimestamp(ctx, 0, 0, frameW, frameH);
 
   ctx.restore();
 
-  // Vẽ grid và frame
+  // redraw grid lines and theme on top (consistent with original)
   ctx.strokeStyle = frameColor;
   ctx.lineWidth = 10;
-
   for (let i = 1; i < cols; i++) {
     ctx.beginPath();
     ctx.moveTo(i * frameW, 0);
@@ -340,412 +552,161 @@ function captureFrame(index) {
     ctx.lineTo(canvas.width, i * frameH);
     ctx.stroke();
   }
-  drawOuterFrame();
-  drawThemeOverlay();
+  drawOuterFrameTo(ctx);
+  drawThemeOverlayTo(ctx);
 }
 
+/* ===========================
+   Capture flow (6 frames)
+   =========================== */
 function startCapture() {
-  startBtn.style.display = "none";
-  statusText.style.display = "block";
+  startBtn.style.display = 'none';
+  statusText.style.display = 'block';
   drawGrid();
 
   let count = 0;
-  let timeLeft = parseInt(countdownInput.value);
+  let timeLeft = Math.max(1, parseInt(countdownInput.value) || 5);
 
   const timer = setInterval(() => {
-    if (timeLeft === 0) {
+    if (timeLeft <= 0) {
       captureFrame(count);
       count++;
-
-      if (count >= 6) {
+      if (count >= cols * rows) {
         clearInterval(timer);
-        statusText.textContent = "Tada!!!";
+        statusText.textContent = 'Tada!!!';
         setTimeout(() => {
-          startBtn.style.display = "block";
-          statusText.style.display = "none";
+          startBtn.style.display = 'block';
+          statusText.style.display = 'none';
         }, 3000);
 
+        // trigger download
         const link = document.createElement('a');
         link.download = 'photo_strip.png';
         link.href = canvas.toDataURL();
         link.click();
         return;
       }
-      timeLeft = parseInt(countdownInput.value);
+      timeLeft = Math.max(1, parseInt(countdownInput.value) || 5);
     }
-    statusText.textContent = `Ảnh ${count + 1}/6 chụp sau ${timeLeft--}s`;
+    statusText.textContent = `Ảnh ${count + 1}/${cols * rows} chụp sau ${timeLeft--}s`;
   }, 1000);
 }
 
+/* ===========================
+   Event listeners
+   =========================== */
+
+// Start capture
 startBtn.addEventListener('click', startCapture);
 
-// --- Xử lý resize ---
+// Frame color
+frameColorPicker.addEventListener('input', (e) => {
+  frameColor = e.target.value;
+  drawGrid();
+});
+
+// Theme change
+themeSelect.addEventListener('change', (e) => {
+  currentTheme = e.target.value;
+  drawGrid();
+});
+
+// Filter change
+filterSelected.addEventListener("click",(e)=>{
+  e.stopPropagation();
+  filterSelect.classList.toggle("open");
+});
+
+filterOptions.forEach(opt=>{
+  opt.addEventListener("click",(e)=>{
+    const value = opt.dataset.value;
+    filterSelected.textContent = opt.textContent;
+    filterSelect.classList.remove("open");
+    selectedFilter=value;
+    if(animationFrameId) cancelAnimationFrame(animationFrameId);
+    selectedFilter==='none'?filterActive=false:initializeFilter();
+  });
+});
+
+dstOptions.forEach(opt=>{
+  opt.addEventListener("click",(e)=>{
+    e.stopPropagation();
+    const value = opt.dataset.value;
+    filterSelected.textContent = opt.textContent;
+    filterSelect.classList.remove("open");
+    selectedFilter=value;
+    if(animationFrameId) cancelAnimationFrame(animationFrameId);
+    initializeFilter();
+  });
+});
+
+document.addEventListener("click",()=>filterSelect.classList.remove("open"));
+
+// Grain change
+grainSelect.addEventListener('change', () => {
+  currentGrain = grainSelect.value;
+
+  // pause all grains and start only selected
+  Object.values(grainVideos).forEach(v => {
+    try { v.pause(); v.currentTime = 0; } catch (e) {}
+  });
+
+  if (currentGrain !== 'none' && grainVideos[currentGrain]) {
+    grainVideos[currentGrain].play().catch(() => {});
+  }
+
+  // force detection refresh if running
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+// Grain opacity
+grainOpacitySlider.addEventListener('input', (e) => {
+  const val = parseInt(e.target.value);
+  grainOpacity = val / 100;
+  grainOpacityValue.textContent = `${val}%`;
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+/* Timestamp controls */
+timestampToggle.addEventListener('change', (e) => {
+  showTimestamp = e.target.checked;
+  timestampControls.style.display = showTimestamp ? 'block' : 'none';
+});
+
+timestampFormatSel.addEventListener('change', (e) => {
+  timestampFormat = e.target.value;
+  if (timestampFormat === 'custom') {
+    customFormatGroup.style.display = 'flex';
+  } else {
+    customFormatGroup.style.display = 'none';
+  }
+});
+
+timestampFontSel.addEventListener('change', (e) => { timestampFont = e.target.value; });
+timestampSizeInput.addEventListener('change', (e) => { timestampSize = parseInt(e.target.value) || 16; });
+if (timestampColorInput) timestampColorInput.addEventListener('input', (e) => { timestampColor = e.target.value; });
+timestampPositionSel.addEventListener('change', (e) => { timestampPosition = e.target.value; });
+customFormatInput.addEventListener('input', (e) => { customTimestampFormat = e.target.value; });
+
+/* Resize handlers */
 function handleResize() {
   if (video.videoWidth > 0 && video.videoHeight > 0) {
     overlay.width = video.videoWidth;
     overlay.height = video.videoHeight;
-    
-    if (typeof faceapi !== 'undefined') {
+    if (typeof faceapi !== 'undefined' && faceModelsLoaded) {
       const displaySize = { width: video.videoWidth, height: video.videoHeight };
       faceapi.matchDimensions(overlay, displaySize);
     }
   }
 }
-
 video.addEventListener('loadedmetadata', handleResize);
 window.addEventListener('resize', handleResize);
 video.addEventListener('play', handleResize);
 
-// --- Film Grain Video Overlay ---
-const grainSelect = document.getElementById("grainSelect");
-let currentGrain = "none";
-let grainVideos = {};
-
-// Thêm biến toàn cục
-let grainOpacity = 0.25; // Mặc định 25%
-
-// Thêm sau phần khai báo grainSelect
-const grainOpacitySlider = document.getElementById('grainOpacity');
-const grainOpacityValue = document.getElementById('grainOpacityValue');
-
-// Preload video grains
-function preloadGrains() {
-  const grains = [
-    { name: "oldfilm", path: "textures/Old Film.mp4" },
-    { name: "dustandscratches", path: "textures/dustandscratches.mp4" },
-    { name: "hardgrain", path: "textures/hardgrain.mp4" },
-  ];
-  
-  grains.forEach(g => {
-    const video = document.createElement('video');
-    video.src = g.path;
-    video.loop = true;
-    video.muted = true;
-    video.playsInline = true;
-    
-    video.addEventListener('loadeddata', () => {
-      console.log(`✅ Video grain ${g.name} loaded`);
-      video.play().catch(e => console.log(`Cannot autoplay ${g.name}:`, e));
-    });
-    
-    grainVideos[g.name] = video;
-  });
-}
-preloadGrains();
-
-grainSelect.addEventListener("change", () => {
-  currentGrain = grainSelect.value;
-  
-  // Dừng tất cả video trước khi chuyển đổi
-  Object.values(grainVideos).forEach(video => {
-    video.pause();
-    video.currentTime = 0;
-  });
-  
-  // Bắt đầu video mới nếu được chọn
-  if (currentGrain !== "none" && grainVideos[currentGrain]) {
-    grainVideos[currentGrain].play().catch(e => 
-      console.log(`Cannot play ${currentGrain}:`, e)
-    );
-  }
-  
-  // Force redraw khi đổi grain
-  if (animationFrameId) {
-    cancelAnimationFrame(animationFrameId);
-  }
-  detectFacesLive();
-});
-
-// Xử lý sự kiện change cho opacity slider
-grainOpacitySlider.addEventListener('input', (e) => {
-  const opacityPercent = parseInt(e.target.value);
-  grainOpacity = opacityPercent / 100;
-  grainOpacityValue.textContent = `${opacityPercent}%`;
-  
-  // Cập nhật ngay lập tức
-  if (animationFrameId) {
-    cancelAnimationFrame(animationFrameId);
-  }
-  detectFacesLive();
-});
-
-// --- Áp dụng video grain trong video overlay ---
-function drawGrainOverlay() {
-  if (currentGrain !== "none" && grainVideos[currentGrain]) {
-    const video = grainVideos[currentGrain];
-    if (video.readyState >= video.HAVE_CURRENT_DATA) {
-      overlayCtx.globalAlpha = grainOpacity;
-      overlayCtx.drawImage(video, 0, 0, overlay.width, overlay.height);
-      overlayCtx.globalAlpha = 1.0;
-    }
-  }
-}
-
-// --- Vẽ video grain lên canvas khi chụp ảnh ---
-function drawGrainOnCanvas(context, x, y, width, height) {
-  if (currentGrain !== "none" && grainVideos[currentGrain]) {
-    const video = grainVideos[currentGrain];
-    if (video.readyState >= video.HAVE_CURRENT_DATA) {
-      context.globalAlpha = grainOpacity;
-      context.drawImage(video, x, y, width, height);
-      context.globalAlpha = 1.0;
-    }
-  }
-}
-
-// Thêm các biến timestamp (sau các biến khác)
-let showTimestamp = true;
-let timestampFormat = "dd/mm/yyyy";
-let timestampFont = "FontTime";
-let timestampSize = 16;
-let timestampColor = "#ffffff";
-let timestampPosition = "bottom-right";
-let customTimestampFormat = "";
-
-// Thêm event listeners cho các controls timestamp (sau các event listeners khác)
-// Thêm biến mới (sau các biến timestamp khác)
-const timestampControls = document.getElementById('timestampControls');
-
-// Cập nhật event listener cho timestamp toggle
-document.getElementById('timestampToggle').addEventListener('change', (e) => {
-  showTimestamp = e.target.checked;
-  
-  // Hiện/ẩn container controls timestamp
-  if (showTimestamp) {
-    timestampControls.style.display = 'block';
-  } else {
-    timestampControls.style.display = 'none';
-  }
-});
-
-// Giữ nguyên các event listeners khác cho timestamp
-document.getElementById('timestampFormat').addEventListener('change', (e) => {
-  timestampFormat = e.target.value;
-  if (timestampFormat === 'custom') {
-    document.getElementById('customFormatGroup').style.display = 'flex';
-  } else {
-    document.getElementById('customFormatGroup').style.display = 'none';
-  }
-});
-
-document.getElementById('timestampFont').addEventListener('change', (e) => {
-  timestampFont = e.target.value;
-});
-
-document.getElementById('timestampSize').addEventListener('change', (e) => {
-  timestampSize = parseInt(e.target.value);
-});
-
-document.getElementById('timestampColor').addEventListener('input', (e) => {
-  timestampColor = e.target.value;
-});
-
-document.getElementById('timestampPosition').addEventListener('change', (e) => {
-  timestampPosition = e.target.value;
-});
-
-document.getElementById('customFormat').addEventListener('input', (e) => {
-  customTimestampFormat = e.target.value;
-});
-
-// Xóa phần timestamp panel cũ (nếu có)
-// Xóa các dòng về timestampPanelVisible và timestampPanel
-
-// Thêm code để khởi tạo trạng thái ban đầu
-window.addEventListener('load', () => {
-  // Ẩn timestamp controls mặc định nếu không được tích chọn
-  if (!showTimestamp) {
-    timestampControls.style.display = 'none';
-  }
-});
-// ... (giữ nguyên phần còn lại của file)
-
-// Hàm format thời gian
-function formatTimestamp(date) {
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
-
-  switch (timestampFormat) {
-    case 'dd/mm/yyyy':
-      return `${day}/${month}/${year}`;
-    case 'mm/dd/yyyy':
-      return `${month}/${day}/${year}`;
-    case 'yyyy-mm-dd':
-      return `${year}-${month}-${day}`;
-    case 'full':
-      return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
-    case 'custom':
-      if (!customTimestampFormat) return `${day}/${month}/${year}`;
-      return customTimestampFormat
-        .replace('DD', day)
-        .replace('MM', month)
-        .replace('YYYY', year)
-        .replace('HH', hours)
-        .replace('mm', minutes)
-        .replace('ss', seconds);
-    default:
-      return `${day}/${month}/${year}`;
-  }
-}
-
-// Hàm vẽ timestamp lên canvas
-// Hàm vẽ timestamp lên canvas (luôn bị lật ngược)
-// Hàm vẽ timestamp lên canvas (luôn bị lật ngược)
-function drawTimestamp(context, x, y, width, height) {
-  if (!showTimestamp) return;
-  
-  const now = new Date();
-  const timestampText = formatTimestamp(now);
-  
-  // Kiểm tra font đã sẵn sàng chưa, nếu không dùng fallback
-  const fontFamily = document.fonts.check(`12px ${timestampFont}`) ? timestampFont : 'monospace';
-  
-  // Tính toán vị trí dựa trên selection
-  let posX, posY;
-  const padding = 10;
-  
-  // Điều chỉnh vị trí để phù hợp với việc lật ngược
-  switch (timestampPosition) {
-    case 'top-left':
-      posX = width - padding;
-      posY = padding + timestampSize;
-      break;
-    case 'top-right':
-      posX = padding;
-      posY = padding + timestampSize;
-      break;
-    case 'bottom-left':
-      posX = width - padding;
-      posY = height - padding;
-      break;
-    case 'bottom-right':
-      posX = padding;
-      posY = height - padding;
-      break;
-    case 'bottom-center':
-      posX = width / 2;
-      posY = height - padding;
-      break;
-    default:
-      posX = padding;
-      posY = height - padding;
-  }
-
-  // Điều chỉnh căn chỉnh text cho phù hợp với việc lật ngược
-  let textAlign;
-  switch (timestampPosition) {
-    case 'top-left':
-    case 'bottom-left':
-      textAlign = 'right';
-      break;
-    case 'top-right':
-    case 'bottom-right':
-      textAlign = 'left';
-      break;
-    case 'bottom-center':
-      textAlign = 'center';
-      break;
-    default:
-      textAlign = 'left';
-  }
-
-  context.save();
-  
-  // Áp dụng transform lật ngược cho timestamp
-  context.translate(width, 0);
-  context.scale(-1, 1);
-  
-  // Sử dụng font family đã được kiểm tra
-  context.font = `${timestampSize}px ${fontFamily}`;
-  context.fillStyle = timestampColor;
-  context.textAlign = textAlign;
-  context.textBaseline = 'bottom';
-  context.strokeStyle = '#000000';
-  context.lineWidth = 3;
-  context.lineJoin = 'round';
-  
-  // Thêm shadow cho chữ dễ đọc
-  context.shadowColor = 'rgba(0, 0, 0, 0.7)';
-  context.shadowBlur = 4;
-  context.shadowOffsetX = 2;
-  context.shadowOffsetY = 2;
-  
-  context.fillText(timestampText, posX, posY);
-  context.restore();
-}
-
-// Cập nhật hàm captureFrame để thêm timestamp
-function captureFrame(index) {
-  const row = Math.floor(index / cols);
-  const col = index % cols;
-  const x = col * frameW;
-  const y = row * frameH;
-
-  ctx.save();
-  ctx.translate(x + frameW, y);
-  ctx.scale(-1, 1);
-
-  // Tính tỉ lệ scale để vẽ video + overlay lên canvas
-  const scaleX = frameW / video.videoWidth;
-  const scaleY = frameH / video.videoHeight;
-  
-  // Vẽ video
-  ctx.drawImage(video, 0, 0, frameW, frameH);
-  
-  // Vẽ overlay với scaling chính xác
-  ctx.drawImage(overlay, 0, 0, video.videoWidth, video.videoHeight, 0, 0, frameW, frameH);
-  
-  // Vẽ grain với opacity hiện tại
-  drawGrainOnCanvas(ctx, 0, 0, frameW, frameH);
-
-  // VỀ TIMESTAMP LÊN MỖI ẢNH
-  drawTimestamp(ctx, 0, 0, frameW, frameH);
-
-  ctx.restore();
-
-  // Vẽ grid và frame (giữ nguyên)
-  ctx.strokeStyle = frameColor;
-  ctx.lineWidth = 10;
-
-  for (let i = 1; i < cols; i++) {
-    ctx.beginPath();
-    ctx.moveTo(i * frameW, 0);
-    ctx.lineTo(i * frameW, canvas.height);
-    ctx.stroke();
-  }
-  for (let i = 1; i < rows; i++) {
-    ctx.beginPath();
-    ctx.moveTo(0, i * frameH);
-    ctx.lineTo(canvas.width, i * frameH);
-    ctx.stroke();
-  }
-  drawOuterFrame();
-  drawThemeOverlay();
-}
-// Preload fonts khi app khởi động
-async function preloadFonts() {
-  const fonts = [
-    '16px FontTime', // Preload với kích thước cụ thể
-    '20px FontTime'
-  ];
-  
-  try {
-    // Đảm bảo font được tải hoàn toàn trước khi tiếp tục
-    await Promise.all(fonts.map(font => document.fonts.load(font)));
-    console.log('✅ All fonts loaded successfully');
-  } catch (error) {
-    console.error('❌ Font loading failed:', error);
-  }
-}
-
-// Đợi font tải xong trước khi khởi động app
-preloadFonts().then(() => {
-  console.log('🚀 App started with fonts ready');
-});
-
-// Gọi hàm preload khi app khởi động
+/* Preload fonts at start (one call) */
 preloadFonts();
+
+/* Initial grid draw */
+drawGrid();
