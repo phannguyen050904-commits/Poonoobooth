@@ -68,9 +68,10 @@
             <button id="start">Chụp ảnh</button>
             <div id="status">Đang chụp...</div>
           </div>
+          
           <div class="control-group">
             <label for="timestampToggle">Hiển thị thời gian:</label>
-            <input type="checkbox" id="timestampToggle" checked />
+            <input type="checkbox" id="timestampToggle"/>
           </div>
 
           <div class="timestamp-controls-container" id="timestampControls">
@@ -89,12 +90,13 @@
               <label for="timestampFont">Phông chữ:</label>
               <select id="timestampFont">
                 <option value="FontTime">VCR_OSD_MONO</option>
+                <option value="FontLiS">duducaligraphy</option>
               </select>
             </div>
 
             <div class="control-group">
               <label for="timestampSize">Cỡ chữ:</label>
-              <input type="number" id="timestampSize" min="10" max="50" value="16" />
+              <input type="number" id="timestampSize" min="10" max="64" value="36" />
             </div>
             <div class="control-group">
               <label for="timestampPosition">Vị trí:</label>
@@ -110,6 +112,59 @@
             <div class="control-group" id="customFormatGroup" style="display: none;">
               <label for="customFormat">Định dạng tùy chỉnh:</label>
               <input type="text" id="customFormat" placeholder="DD-MM-YYYY HH:mm" />
+            </div>
+          </div>
+
+          <!-- Dialogue Controls -->
+          <div class="control-group">
+            <label for="dialogueToggle">Hiển thị dialogue:</label>
+            <input type="checkbox" id="dialogueToggle"/>
+          </div>
+
+          <div class="dialogue-controls-container" id="dialogueControls">
+            <div class="control-group">
+              <label for="dialogueSelect">Chọn dialogue:</label>
+              <select id="dialogueSelect">
+                <option value="none">Không</option>
+                <option value="speech_bubble_1">Bong bóng 1</option>
+                <option value="speech_bubble_2">Bong bóng 2</option>
+              </select>
+            </div>
+            <div class="control-group">
+              <label for="dialogueScale">Độ lớn dialogue:</label>
+              <input type="range" id="dialogueScale" min="50" max="200" value="100" />
+              <span id="dialogueScaleValue">100%</span>
+            </div>
+
+            <div class="control-group">
+              <label for="dialogueText">Nội dung:</label>
+              <input type="text" id="dialogueText" placeholder="Nhập văn bản..." />
+            </div>
+
+            <div class="control-group">
+              <label for="dialogueFont">Phông chữ:</label>
+              <select id="dialogueFont">
+                <option value="MyFont">Manga Font</option>
+                <option value="FontLiS">duducaligraphy</option>
+              </select>
+            </div>
+
+            <div class="control-group">
+              <label for="dialogueSize">Cỡ chữ:</label>
+              <input type="number" id="dialogueSize" min="10" max="48" value="16" />
+            </div>
+
+            <div class="control-group">
+              <label for="dialogueColor">Màu chữ:</label>
+              <input type="color" id="dialogueColor" value="#000000" />
+            </div>
+
+            <div class="control-group">
+              <label for="dialoguePosition">Vị trí dialogue:</label>
+              <select id="dialoguePosition">
+                <option value="top-left">trái</option>
+                <option value="top-right">phải</option>
+              </select>
             </div>
           </div>
 
@@ -130,7 +185,6 @@
               <option value="Đi làm">Đi làm</option>
               <option value="Danisa">Danisa</option>
               <option value="Dont starve together 1">Dont starve together 1</option>
-
             </select>
           </div>
 
@@ -206,8 +260,6 @@
             <input type="range" id="grainOpacity" min="0" max="100" value="25" />
             <span id="grainOpacityValue">25%</span>
           </div>
-
-          
         </div>
       </section>
 

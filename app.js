@@ -5,6 +5,7 @@
    - Preload fonts, themes, filters, grains
    - Capture 6 frames into a 3x2 canvas photo strip with timestamp
    - Controls: frame color, theme, filter, grain, grain opacity, timestamp options, countdown
+   - NEW: Dialogue controls with face tracking
 */
 
 /* ===========================
@@ -28,12 +29,11 @@ const grainOpacitySlider = document.getElementById('grainOpacity');
 const grainOpacityValue = document.getElementById('grainOpacityValue');
 
 const timestampControls = document.getElementById('timestampControls');
-/* timestamp controls exist in DOM with ids used below */
 const timestampToggle = document.getElementById('timestampToggle');
 const timestampFormatSel = document.getElementById('timestampFormat');
 const timestampFontSel = document.getElementById('timestampFont');
 const timestampSizeInput = document.getElementById('timestampSize');
-const timestampColorInput = document.getElementById('timestampColor') || null; // optional in DOM
+const timestampColorInput = document.getElementById('timestampColor') || null;
 const timestampPositionSel = document.getElementById('timestampPosition');
 const customFormatInput = document.getElementById('customFormat');
 const customFormatGroup = document.getElementById('customFormatGroup');
@@ -42,6 +42,15 @@ const filterSelected = filterSelect.querySelector('.selected');
 const filterOptions = filterSelect.querySelectorAll('.select-menu > li:not(.dst-parent)');
 const dstOptions = filterSelect.querySelectorAll('.dst-submenu li');
 
+// Dialogue controls
+const dialogueToggle = document.getElementById('dialogueToggle');
+const dialogueControls = document.getElementById('dialogueControls');
+const dialogueSelect = document.getElementById('dialogueSelect');
+const dialogueTextInput = document.getElementById('dialogueText');
+const dialogueFontSel = document.getElementById('dialogueFont');
+const dialogueSizeInput = document.getElementById('dialogueSize');
+const dialogueColorInput = document.getElementById('dialogueColor');
+const dialoguePositionSel = document.getElementById('dialoguePosition');
 
 /* ===========================
    App state
@@ -53,6 +62,7 @@ let filterActive = false;
 
 let themeImages = {};   // { name: Image }
 let filterImages = {};  // { name: { image, offsetX, offsetY, scale } }
+let dialogueImages = {}; // { name: Image }
 
 let grainVideos = {};   // { name: HTMLVideoElement }
 let currentGrain = 'none';
@@ -70,13 +80,24 @@ const frameW = canvas.width / cols;
 const frameH = (canvas.height - bottomPadding) / rows;
 
 /* Timestamp state */
-let showTimestamp = true;
+let showTimestamp = false;
 let timestampFormat = 'dd/mm/yyyy';
 let timestampFont = 'FontTime';
-let timestampSize = 16;
+let timestampSize = 36;
 let timestampColor = '#ffffff';
 let timestampPosition = 'bottom-right';
 let customTimestampFormat = '';
+
+/* Dialogue state */
+/* Dialogue state */
+let showDialogue = false;
+let selectedDialogue = 'none';
+let dialogueText = '';
+let dialogueFont = 'MyFont';
+let dialogueSize = 16;
+let dialogueColor = '#000000';
+let dialoguePosition = 'top-left';
+let dialogueScale = 1.0; // Thêm dòng này
 
 /* ===========================
    Utilities
@@ -100,7 +121,7 @@ async function startCamera() {
 startCamera();
 
 /* ===========================
-   Preloaders: themes, filters, grains, fonts
+   Preloaders: themes, filters, grains, fonts, dialogues
    =========================== */
 function preloadThemes() {
   const themes = ['Đi làm', 'Danisa','Dont starve together 1'];
@@ -114,11 +135,11 @@ function preloadThemes() {
 
 function preloadFilters() {
   const filters = [
-    { name: "flower wreath", path: "filters/Don't starve together/flower wreath.png", offsetX: 0, offsetY: 0.5, scale: 2.3 },
-    { name: "cylinder", path: "filters/Don't starve together/cylinder.png", offsetX: 0, offsetY: 0.7, scale: 2.7 },
-    { name: "buffalo hat", path: "filters/Don't starve together/buffalo hat.png", offsetX: 0, offsetY: 0.6, scale: 3.6 },
-    { name: "winter hat", path: "filters/Don't starve together/winter hat.png", offsetX: 0, offsetY: 0.65, scale: 2.6 },
-    { name: "straw hat", path: "filters/Don't starve together/winter hat.png", offsetX: 0, offsetY: 0.65, scale: 2.6 },
+    { name: "flower wreath", path: "filters/Dont starve together/flower wreath.png", offsetX: 0, offsetY: 0.5, scale: 2.3 },
+    { name: "cylinder", path: "filters/Dont starve together/cylinder.png", offsetX: 0, offsetY: 0.7, scale: 2.7 },
+    { name: "buffalo hat", path: "filters/Dont starve together/buffalo hat.png", offsetX: 0, offsetY: 0.6, scale: 3.6 },
+    { name: "winter hat", path: "filters/Dont starve together/winter hat.png", offsetX: 0, offsetY: 0.65, scale: 2.6 },
+    { name: "straw hat", path: "filters/Dont starve together/winter hat.png", offsetX: 0, offsetY: 0.65, scale: 2.6 },
     { name: "mũ đầu bếp", path: "filters/Mũ đầu bếp.png", offsetX: 0, offsetY: 0.65, scale: 2.8 },
     { name: "vòng hoa", path: "filters/vòng hoa.png", offsetX: 0, offsetY: 0.5, scale: 2.6 },
     { name: "T1 6 sao", path: "filters/T1 6 sao.png", offsetX: 0, offsetY: 2.9, scale: 1.0 },
@@ -153,7 +174,6 @@ function preloadFilters() {
     { name: "hat suit 2", path: "filters/Oxygen not includ/hat suit 2.png", offsetX: 0, offsetY: 0.6, scale: 2.35 },
      { name: "hat technical 1", path: "filters/Oxygen not includ/hat technical 1.png", offsetX: 0.05, offsetY: 0.85, scale: 2.3 },
     { name: "hat technical 2", path: "filters/Oxygen not includ/hat technical 2.png", offsetX: 0.05, offsetY: 0.85, scale: 2.3 },
-
   ];
 
   filters.forEach(f => {
@@ -162,6 +182,23 @@ function preloadFilters() {
     filterImages[f.name] = { image: img, offsetX: f.offsetX, offsetY: f.offsetY, scale: f.scale || 1.0 };
     img.addEventListener('load', () => safeLog(`Filter loaded: ${f.name}`));
     img.addEventListener('error', () => safeErr(`Filter failed: ${f.name}`));
+  });
+}
+
+function preloadDialogues() {
+  const dialogues = [
+    { name: "speech_bubble_1", path: "dialogues/speech_bubble_1.png" },
+    { name: "speech_bubble_2", path: "dialogues/speech_bubble_2.png" },
+    { name: "thought_bubble_1", path: "dialogues/thought_bubble_1.png" },
+    { name: "thought_bubble_2", path: "dialogues/thought_bubble_2.png" }
+  ];
+
+  dialogues.forEach(d => {
+    const img = new Image();
+    img.src = d.path;
+    dialogueImages[d.name] = img;
+    img.addEventListener('load', () => safeLog(`Dialogue loaded: ${d.name}`));
+    img.addEventListener('error', () => safeErr(`Dialogue failed: ${d.name}`));
   });
 }
 
@@ -188,7 +225,7 @@ function preloadGrains() {
 }
 
 async function preloadFonts() {
-  const fontsToLoad = ['16px FontTime', '20px FontTime'];
+  const fontsToLoad = ['32px FontTime', '32px FontLiS'];
   try {
     await Promise.all(fontsToLoad.map(f => document.fonts.load(f)));
     safeLog('Fonts loaded');
@@ -201,6 +238,7 @@ async function preloadFonts() {
 function preloadAll() {
   preloadThemes();
   preloadFilters();
+  preloadDialogues();
   preloadGrains();
   preloadFonts();
 }
@@ -347,14 +385,210 @@ function drawGrainOnCanvas(context, x, y, width, height) {
 }
 
 /* ===========================
-   Face detection & filter rendering loop
+   Dialogue rendering functions
    =========================== */
+function drawDialogueOnFace(detection) {
+  if (!showDialogue || selectedDialogue === 'none' || !dialogueText.trim()) return;
 
+  const currentDialogue = dialogueImages[selectedDialogue];
+  if (!currentDialogue || !currentDialogue.complete) return;
+
+  const landmarks = detection.landmarks;
+  const nose = landmarks.getNose();
+  
+  // Calculate base size (không nhân với dialogueScale ở đây)
+  const faceWidth = Math.abs(landmarks.getRightEye()[3].x - landmarks.getLeftEye()[0].x);
+  const baseDialogueWidth = faceWidth * 1.5;
+  const originalAspectRatio = currentDialogue.naturalWidth / currentDialogue.naturalHeight;
+  const baseDialogueHeight = baseDialogueWidth / originalAspectRatio;
+
+  // Apply scale
+  const dialogueWidth = baseDialogueWidth * dialogueScale;
+  const dialogueHeight = baseDialogueHeight * dialogueScale;
+
+  let centerX, centerY;
+
+  // Tính toán vị trí dựa trên kích thước gốc (không scale)
+  // Điều này giữ cho vị trí tương đối so với mặt ổn định
+  const baseOffsetX = baseDialogueWidth * 0.3; // offset mặc định
+  const baseOffsetY = baseDialogueHeight * 0.3; // offset mặc định
+
+  switch (dialoguePosition) {
+    case 'top-left':
+      centerX = nose[0].x + baseOffsetX * 4;
+      centerY = nose[0].y - baseOffsetY * 3;
+      break;
+    case 'top-right':
+      centerX = nose[0].x - baseOffsetX * 4;
+      centerY = nose[0].y - baseOffsetY * 3;
+      break;
+    case 'bottom-left':
+      centerX = nose[0].x - baseOffsetX * 0.8;
+      centerY = nose[0].y + baseOffsetY * 0.5;
+      break;
+    case 'bottom-right':
+      centerX = nose[0].x + baseOffsetX * 0.3;
+      centerY = nose[0].y + baseOffsetY * 0.5;
+      break;
+    case 'top-center':
+      centerX = nose[0].x;
+      centerY = nose[0].y - baseOffsetY * 1.5;
+      break;
+    case 'bottom-center':
+      centerX = nose[0].x;
+      centerY = nose[0].y + baseOffsetY * 0.5;
+      break;
+    default:
+      centerX = nose[0].x + baseOffsetX * 3;
+      centerY = nose[0].y - baseOffsetY * 1.5;
+  }
+
+  // Draw dialogue bubble - vẽ từ center point với kích thước đã scale
+  overlayCtx.drawImage(
+    currentDialogue,
+    centerX - dialogueWidth / 2,  // Vẽ từ center point
+    centerY - dialogueHeight / 2, // Vẽ từ center point
+    dialogueWidth,
+    dialogueHeight
+  );
+  // Draw dialogue bubble
+  overlayCtx.drawImage(
+    currentDialogue,
+    centerX - dialogueWidth / 2,
+    centerY - dialogueHeight / 2,
+    dialogueWidth,
+    dialogueHeight
+  );
+
+  // Draw text on dialogue bubble
+  overlayCtx.save();
+  overlayCtx.translate(overlay.width, 0);
+  overlayCtx.scale(-1, 1); // Flip for mirror effect
+
+  const flippedCenterX = overlay.width - centerX;
+  
+  overlayCtx.font = `${dialogueSize}px ${dialogueFont}`;
+  overlayCtx.fillStyle = dialogueColor;
+  overlayCtx.textAlign = 'center';
+  overlayCtx.textBaseline = 'middle';
+  
+  // Word wrap for dialogue text
+  const maxWidth = dialogueWidth * 0.8;
+  const words = dialogueText.split(' ');
+  const lines = [];
+  let currentLine = words[0];
+
+  for (let i = 1; i < words.length; i++) {
+    const word = words[i];
+    const width = overlayCtx.measureText(currentLine + " " + word).width;
+    if (width < maxWidth) {
+      currentLine += " " + word;
+    } else {
+      lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  lines.push(currentLine);
+
+  // Draw text lines
+  const lineHeight = dialogueSize * 1.2;
+  const startY = centerY - (lines.length - 1) * lineHeight / 2;
+  
+  lines.forEach((line, index) => {
+    overlayCtx.fillText(
+      line,
+      flippedCenterX,
+      startY + index * lineHeight
+    );
+  });
+
+  overlayCtx.restore();
+}
+
+/* ===========================
+   Timestamp on video preview (flipped)
+   =========================== */
+function drawTimestampOnVideo() {
+  if (!showTimestamp) return;
+
+  const now = new Date();
+  const text = formatTimestamp(now);
+  
+  // Font family check
+  const fontFamily = document.fonts && document.fonts.check && document.fonts.check(`12px ${timestampFont}`) ? timestampFont : 'monospace';
+
+  // Compute position for video (account for horizontal flip)
+  const padding = 25;
+  let posX, posY, align;
+  
+  switch (timestampPosition) {
+    case 'top-left':
+      posX = overlay.width - padding;
+      posY = padding + timestampSize; 
+      align = 'right';
+      break;
+    case 'top-right':
+      posX = padding;
+      posY = padding + timestampSize; 
+      align = 'left';
+      break;
+    case 'bottom-left':
+      posX = overlay.width - padding;
+      posY = overlay.height - padding; 
+      align = 'right';
+      break;
+    case 'bottom-right':
+      posX = padding;
+      posY = overlay.height - padding; 
+      align = 'left';
+      break;
+    case 'bottom-center':
+      posX = overlay.width / 2; 
+      posY = overlay.height - padding; 
+      align = 'center';
+      break;
+    default:
+      posX = padding; 
+      posY = overlay.height - padding; 
+      align = 'left';
+  }
+
+  // Save context và áp dụng flip horizontal
+  overlayCtx.save();
+  overlayCtx.translate(overlay.width, 0);
+  overlayCtx.scale(-1, 1);
+
+  // Draw timestamp on overlay (đã được flip)
+  overlayCtx.font = `${timestampSize}px ${fontFamily}`;
+  overlayCtx.fillStyle = timestampColor;
+  overlayCtx.textAlign = align;
+  overlayCtx.textBaseline = 'bottom';
+  overlayCtx.lineWidth = 3;
+  overlayCtx.strokeStyle = '#000';
+  overlayCtx.lineJoin = 'round';
+  overlayCtx.shadowColor = 'rgba(0,0,0,0.7)';
+  overlayCtx.shadowBlur = 4;
+  overlayCtx.shadowOffsetX = 2;
+  overlayCtx.shadowOffsetY = 2;
+
+  overlayCtx.fillText(text, posX, posY);
+  
+  // Restore context
+  overlayCtx.restore();
+}
+
+/* ===========================
+   Updated face detection & filter rendering loop with dialogue
+   =========================== */
+/* ===========================
+   Updated face detection & filter rendering loop with dialogue
+   =========================== */
 async function detectFacesLive() {
-  // If no filter chosen, just draw grain (if any) and loop
-  if (selectedFilter === 'none') {
+  // If no filter chosen and no dialogue, just draw grain (if any) and timestamp, then loop
+  if (selectedFilter === 'none' && (!showDialogue || selectedDialogue === 'none' || !dialogueText.trim())) {
     overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
-    drawGrainOverlay(); 
+    drawGrainOverlay();
+    drawTimestampOnVideo();
     animationFrameId = requestAnimationFrame(detectFacesLive);
     return;
   }
@@ -382,36 +616,50 @@ async function detectFacesLive() {
     // draw grain first
     drawGrainOverlay();
 
-    if (detections && detections.length > 0 && selectedFilter !== 'none') {
-      const currentFilter = filterImages[selectedFilter];
-      if (currentFilter && currentFilter.image.complete) {
+    if (detections && detections.length > 0) {
+      // Draw filters
+      if (selectedFilter !== 'none') {
+        const currentFilter = filterImages[selectedFilter];
+        if (currentFilter && currentFilter.image.complete) {
+          detections.forEach(d => {
+            const landmarks = d.landmarks;
+            const leftEye = landmarks.getLeftEye();
+            const rightEye = landmarks.getRightEye();
+            const nose = landmarks.getNose();
+
+            // base face width estimation using eyes
+            const baseFaceWidth = Math.abs(rightEye[3].x - leftEye[0].x);
+            const faceWidth = baseFaceWidth * (currentFilter.scale || 1.0);
+            // Tự động giữ tỷ lệ ảnh gốc
+            const img = currentFilter.image;
+            const originalAspectRatio = img.naturalWidth / img.naturalHeight;
+            const faceHeight = faceWidth / originalAspectRatio;
+
+            const centerX = (leftEye[3].x + rightEye[0].x) / 2 - faceWidth * (currentFilter.offsetX || 0);
+            const centerY = nose[0].y - faceHeight * (currentFilter.offsetY || 0);
+
+            overlayCtx.drawImage(
+              currentFilter.image,
+              centerX - faceWidth / 2,
+              centerY - faceHeight / 2,
+              faceWidth,
+              faceHeight
+            );
+          });
+        }
+      }
+
+      // Draw dialogues - CHỈ CẦN CÓ FACE DETECTION LÀ VẼ ĐƯỢC DIALOGUE
+      if (showDialogue && selectedDialogue !== 'none' && dialogueText.trim()) {
         detections.forEach(d => {
-          const landmarks = d.landmarks;
-          const nose = landmarks.getNose();
-          const leftEye = landmarks.getLeftEye();
-          const rightEye = landmarks.getRightEye();
-
-          // base face width estimation using eyes
-          const baseFaceWidth = Math.abs(rightEye[3].x - leftEye[0].x);
-          const faceWidth = baseFaceWidth * (currentFilter.scale || 1.0);
-          // Tự động giữ tỷ lệ ảnh gốc
-          const img = currentFilter.image;
-          const originalAspectRatio = img.naturalWidth / img.naturalHeight;
-          const faceHeight = faceWidth / originalAspectRatio;
-
-          const centerX = (leftEye[3].x + rightEye[0].x) / 2 - faceWidth * (currentFilter.offsetX || 0);
-          const centerY = nose[0].y - faceHeight * (currentFilter.offsetY || 0);
-
-          overlayCtx.drawImage(
-            currentFilter.image,
-            centerX - faceWidth / 2,
-            centerY - faceHeight / 2,
-            faceWidth,
-            faceHeight
-          );
+          drawDialogueOnFace(d);
         });
       }
     }
+
+    // Draw timestamp on video preview (after filters and dialogues)
+    drawTimestampOnVideo();
+
   } catch (err) {
     safeErr('Face detection error:', err);
   }
@@ -436,7 +684,6 @@ async function initializeFilter() {
 /* ===========================
    Capture logic (3x2 photo strip)
    =========================== */
-
 function formatTimestamp(date) {
   const DD = String(date.getDate()).padStart(2, '0');
   const MM = String(date.getMonth() + 1).padStart(2, '0');
@@ -596,6 +843,19 @@ function startCapture() {
    Event listeners
    =========================== */
 
+// Thêm phần khởi tạo khi trang load
+document.addEventListener('DOMContentLoaded', function() {
+  // Ẩn controls mặc định
+  timestampControls.style.display = 'none';
+  dialogueControls.style.display = 'none';
+  timestampToggle.checked = false;
+  dialogueToggle.checked = false;
+  
+  // Bắt đầu detection loop
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
 // Start capture
 startBtn.addEventListener('click', startCapture);
 
@@ -673,6 +933,8 @@ grainOpacitySlider.addEventListener('input', (e) => {
 timestampToggle.addEventListener('change', (e) => {
   showTimestamp = e.target.checked;
   timestampControls.style.display = showTimestamp ? 'block' : 'none';
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
 });
 
 timestampFormatSel.addEventListener('change', (e) => {
@@ -682,13 +944,112 @@ timestampFormatSel.addEventListener('change', (e) => {
   } else {
     customFormatGroup.style.display = 'none';
   }
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
 });
 
-timestampFontSel.addEventListener('change', (e) => { timestampFont = e.target.value; });
-timestampSizeInput.addEventListener('change', (e) => { timestampSize = parseInt(e.target.value) || 16; });
-if (timestampColorInput) timestampColorInput.addEventListener('input', (e) => { timestampColor = e.target.value; });
-timestampPositionSel.addEventListener('change', (e) => { timestampPosition = e.target.value; });
-customFormatInput.addEventListener('input', (e) => { customTimestampFormat = e.target.value; });
+timestampFontSel.addEventListener('change', (e) => { 
+  timestampFont = e.target.value; 
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+timestampSizeInput.addEventListener('change', (e) => { 
+  timestampSize = parseInt(e.target.value) || 16; 
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+if (timestampColorInput) timestampColorInput.addEventListener('input', (e) => { 
+  timestampColor = e.target.value; 
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+timestampPositionSel.addEventListener('change', (e) => { 
+  timestampPosition = e.target.value; 
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+customFormatInput.addEventListener('input', (e) => { 
+  customTimestampFormat = e.target.value; 
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+/* Dialogue controls */
+/* Dialogue controls */
+// Thêm reference cho control mới
+const dialogueScaleInput = document.getElementById('dialogueScale');
+const dialogueScaleValue = document.getElementById('dialogueScaleValue');
+
+// Thêm event listener
+dialogueScaleInput.addEventListener('input', (e) => {
+  const val = parseInt(e.target.value);
+  dialogueScale = val / 100; // Chuyển từ % sang decimal (50% = 0.5, 100% = 1.0, 200% = 2.0)
+  dialogueScaleValue.textContent = `${val}%`;
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+dialogueToggle.addEventListener('change', (e) => {
+  showDialogue = e.target.checked;
+  dialogueControls.style.display = showDialogue ? 'block' : 'none';
+  
+  // QUAN TRỌNG: Khởi tạo face detection khi bật dialogue
+  if (showDialogue && !filterActive) {
+    initializeFilter();
+  } else {
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    detectFacesLive();
+  }
+});
+
+dialogueSelect.addEventListener('change', (e) => {
+  selectedDialogue = e.target.value;
+  // QUAN TRỌNG: Đảm bảo face detection đang chạy khi chọn dialogue
+  if (showDialogue && selectedDialogue !== 'none' && !filterActive) {
+    initializeFilter();
+  } else {
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    detectFacesLive();
+  }
+});
+dialogueSelect.addEventListener('change', (e) => {
+  selectedDialogue = e.target.value;
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+dialogueTextInput.addEventListener('input', (e) => {
+  dialogueText = e.target.value;
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+dialogueFontSel.addEventListener('change', (e) => {
+  dialogueFont = e.target.value;
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+dialogueSizeInput.addEventListener('change', (e) => {
+  dialogueSize = parseInt(e.target.value) || 16;
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+dialogueColorInput.addEventListener('input', (e) => {
+  dialogueColor = e.target.value;
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+dialoguePositionSel.addEventListener('change', (e) => {
+  dialoguePosition = e.target.value;
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
 
 /* Resize handlers */
 function handleResize() {

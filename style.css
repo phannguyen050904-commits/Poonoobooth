@@ -23,7 +23,7 @@
 ================================ */
 @font-face {
   font-family: 'MyFont';
-  src: url('MTO Astro City.ttf') format('truetype');
+  src: url('font/MTO\ Astro\ City.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
   font-display: block;
@@ -31,7 +31,14 @@
 
 @font-face {
   font-family: 'FontTime';
-  src: url('VCR_OSD_MONO_1.001.ttf') format('truetype');
+  src: url('font/VCR_OSD_MONO_1.001.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+@font-face {
+  font-family: 'FontLiS';
+  src: url('font/Dudu_Calligraphy.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
   font-display: block;
@@ -234,6 +241,7 @@ main {
 }
 
 #start {
+  font-family: 'MyFont', sans-serif;
   background: var(--primary);
   color: #fff;
   padding: 1rem;
@@ -287,8 +295,9 @@ main {
   color: var(--text-light);
 }
 
-/* Timestamp controls */
-.timestamp-controls-container {
+/* Timestamp and Dialogue controls */
+.timestamp-controls-container,
+.dialogue-controls-container {
   background: #f8f9fa;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -327,14 +336,16 @@ main {
   .control-group input,
   .control-group select { width: 100%; }
 
-  .timestamp-controls-container { padding: 1rem; }
+  .timestamp-controls-container,
+  .dialogue-controls-container { padding: 1rem; }
 }
 
 @media (max-width: 480px) {
   .logo { font-size: 1.25rem; }
   .instagram_icon { width: 1.75rem; height: 1.75rem; }
   .video-container { height: 250px; }
-  .timestamp-controls-container { padding: .75rem; }
+  .timestamp-controls-container,
+  .dialogue-controls-container { padding: .75rem; }
 }
 
 @media (max-width: 320px) {
