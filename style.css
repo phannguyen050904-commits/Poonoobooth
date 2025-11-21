@@ -43,7 +43,13 @@
   font-style: normal;
   font-display: block;
 }
-
+@font-face {
+  font-family: 'FontPixel';
+  src: url('font/kvn-97.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
 /* ================================
    GLOBAL LAYOUT
 ================================ */
@@ -69,13 +75,27 @@ header {
   z-index: 100;
 }
 
+/* ================================
+   HEADER LAYOUT
+================================ */
 .header-content {
   max-width: 1200px;
-  margin: auto;
+  margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0 2rem;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
 }
 
 .logo {
@@ -93,6 +113,135 @@ header {
   transform: scale(1.1);
 }
 
+.weather_icon {
+  width: 3rem;
+  height: 3rem;
+  transition: transform 0.3s ease;
+  cursor: pointer;
+}
+.weather_icon:hover {
+  transform: scale(1.1);
+}
+
+.weather-parent {
+  position: relative;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+}
+
+.weather-submenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  display: none;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: .4rem 0;
+  width: 150px;
+  z-index: 10;
+  list-style: none;
+  max-height: 20rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-shadow: var(--shadow);
+}
+
+.weather-submenu li {
+  padding: .6rem .8rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.weather-submenu li:hover {
+  background: #f4f4f4;
+}
+
+.weather-parent:hover .weather-submenu {
+  display: block;
+}
+/* ================================
+   LYRICS STYLES
+================================ */
+.lyrics-container {
+  position: absolute;
+  top: 1rem;
+  left: 0;
+  right: 0;
+  max-width: 480px;
+  margin: 0 auto;
+  text-align: center;
+  z-index: 10;
+}
+
+.lyrics-text {
+  font-family: 'MyFont', cursive;
+  font-size: 1.5rem;
+  color: var(--primary-dark);
+  line-height: 1.4;
+  white-space: pre-line;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+
+/* Music menu styles */
+.music-parent {
+  position: relative;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+}
+
+.music_icon {
+  width: 3rem;
+  height: 3rem;
+  transition: transform 0.3s ease;
+  cursor: pointer;
+}
+
+.music_icon:hover {
+  transform: scale(1.1);
+}
+
+.music-submenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  display: none;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: .4rem 0;
+  width: 150px;
+  z-index: 10;
+  list-style: none;
+  max-height: 20rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-shadow: var(--shadow);
+}
+
+.music-submenu li {
+  padding: .6rem .8rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.music-submenu li:hover {
+  background: #f4f4f4;
+}
+
+.music-parent:hover .music-submenu {
+  display: block;
+}
 /* ================================
    MAIN LAYOUT
 ================================ */
@@ -115,6 +264,8 @@ main {
    CAMERA SECTION
 ================================ */
 .camera-section {
+  position: relative; /* Thêm dòng này */
+
   background: var(--white);
   box-shadow: var(--shadow);
   border-radius: 12px;
@@ -124,17 +275,34 @@ main {
   align-items: center;
 }
 
-.camera-title {
-  font-size: 1.5rem;
-  margin-bottom: 1.5rem;
-  color: var(--primary);
+.lyrics-container {
+  position: absolute; /* Giữ nguyên absolute */
+  top: 1rem; /* Cách trên cùng của camera-section */
+  max-width: 480px;
+  margin: 0 auto 1rem auto; /* Căn giữa và tạo khoảng cách dưới */
   text-align: center;
-  min-height: 3rem;
-  display: flex;
-  align-items: center;
+  z-index: 10;
+}
+
+.lyrics-text {
+  font-family: 'MyFont', cursive;
+  font-size: 1.5rem;
+  color: var(--primary-dark);
+  line-height: 1.4;
+  opacity: 0;
+  transition: opacity 1s ease-in-out;
+  white-space: pre-line;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  display: inline-block;
+}
+
+.lyrics-text.show {
+  opacity: 1;
 }
 
 .video-container {
+  margin-top: 5rem;
   width: 100%;
   max-width: 480px;
   height: 360px;
@@ -170,7 +338,7 @@ main {
 }
 
 .canvas-title {
-  font-size: 1.5rem;
+  font-size: 2rem;
   margin-bottom: 1rem;
   color: var(--primary);
 }
@@ -408,4 +576,137 @@ main {
   cursor:pointer;}
 .dst-parent:hover .dst-submenu {
   display:block;
+}
+/* ================================
+   WEATHER EFFECTS ANIMATIONS
+================================ */
+.leaf {
+    position: fixed;
+    top: -50px;
+    user-select: none;
+    pointer-events: none;
+    opacity: 0.8;
+    z-index: 9999;
+    font-size: 1.5rem;
+    animation-timing-function: linear;
+}
+
+.snowflake {
+    position: fixed;
+    top: -50px;
+    color: #e6f7ff;
+    font-size: 1.5rem;
+    user-select: none;
+    pointer-events: none;
+    opacity: 0.8;
+    z-index: 9999;
+    animation-timing-function: linear;
+}
+
+.raindrop {
+    position: fixed;
+    top: -30px;
+    user-select: none;
+    pointer-events: none;
+    z-index: 9998;
+    animation-timing-function: linear;
+}
+
+@keyframes leaf-fall {
+    0% {
+        transform: translateX(0) translateY(0) rotate(0deg);
+    }
+    100% {
+        transform: translateX(calc(var(--sway, 100px) * 2)) translateY(100vh) rotate(360deg);
+    }
+}
+
+@keyframes fall {
+    to {
+        transform: translateY(100vh) rotate(360deg);
+    }
+}
+
+@keyframes rain-fall {
+    0% {
+        transform: translateY(0) translateX(0);
+        opacity: 1;
+    }
+    85% {
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateY(100vh) translateX(20px);
+        opacity: 0;
+    }
+}
+
+@keyframes sunbeam-shine {
+    0%, 100% {
+        opacity: 0;
+        transform: translateX(100px);
+    }
+    50% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Hiệu ứng splash khi mưa chạm đáy - THÊM MỚI */
+.raindrop-splash {
+    position: fixed;
+    bottom: 0;
+    width: 8px;
+    height: 3px;
+    background: rgba(160, 208, 255, 0.6);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9997;
+    animation: splash 0.3s ease-out forwards;
+}
+
+@keyframes splash {
+    0% {
+        transform: scale(0.5);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+/* Hiệu ứng màn mưa nền - THÊM MỚI */
+.rain-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.1) 0%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    pointer-events: none;
+    z-index: 9996;
+    animation: rain-overlay 2s linear infinite;
+}
+
+@keyframes rain-overlay {
+    0% {
+        background-position: 0 0;
+    }
+    100% {
+        background-position: 0 100%;
+    }
+}
+
+/* Đảm bảo weather menu hiển thị đúng */
+.weather-parent:hover .weather-submenu {
+    display: block !important;
+}
+
+.weather-submenu {
+    display: none;
 }

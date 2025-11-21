@@ -52,9 +52,7 @@ const dialogueSizeInput = document.getElementById('dialogueSize');
 const dialogueColorInput = document.getElementById('dialogueColor');
 const dialoguePositionSel = document.getElementById('dialoguePosition');
 
-/* ===========================
-   App state
-   =========================== */
+//App state=================================================//
 let frameColor = '#4f6d8f';
 let currentTheme = 'none';
 let selectedFilter = 'none';
@@ -75,9 +73,9 @@ let faceModelsLoaded = false;
 /* Canvas grid layout (3 rows x 2 cols) */
 const rows = 3;
 const cols = 2;
-const bottomPadding = 100;
+const bottomPadding = canvas.height/(8-5/3);
 const frameW = canvas.width / cols;
-const frameH = (canvas.height - bottomPadding) / rows;
+const frameH = (canvas.height- bottomPadding)/ rows;
 
 /* Timestamp state */
 let showTimestamp = false;
@@ -99,17 +97,13 @@ let dialogueColor = '#000000';
 let dialoguePosition = 'top-left';
 let dialogueScale = 1.0; // Thêm dòng này
 
-/* ===========================
-   Utilities
-   =========================== */
+//
 const $ = id => document.getElementById(id);
 
 function safeLog(...args) { console.log(...args); }
 function safeErr(...args) { console.error(...args); }
 
-/* ===========================
-   Camera setup
-   =========================== */
+//camera setup==========================================================================//
 async function startCamera() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -120,11 +114,9 @@ async function startCamera() {
 }
 startCamera();
 
-/* ===========================
-   Preloaders: themes, filters, grains, fonts, dialogues
-   =========================== */
+//Preloaders: themes, filters, grains, fonts, dialogues=======================================//
 function preloadThemes() {
-  const themes = ['Đi làm', 'Danisa','Dont starve together 1'];
+  const themes = ['Đi làm', 'Danisa','Dont starve together 1', 'MCK'];
   themes.forEach(name => {
     const img = new Image();
     img.src = `themes/${name}.png`;
@@ -133,8 +125,11 @@ function preloadThemes() {
   });
 }
 
+
+//filters===================================================================//
 function preloadFilters() {
   const filters = [
+    { name: "Sơn Tùng-MTP", path: "filters/Sơn Tùng-MTP.png", offsetX: 0, offsetY: 2, scale: 3 },
     { name: "flower wreath", path: "filters/Dont starve together/flower wreath.png", offsetX: 0, offsetY: 0.5, scale: 2.3 },
     { name: "cylinder", path: "filters/Dont starve together/cylinder.png", offsetX: 0, offsetY: 0.7, scale: 2.7 },
     { name: "buffalo hat", path: "filters/Dont starve together/buffalo hat.png", offsetX: 0, offsetY: 0.6, scale: 3.6 },
@@ -185,12 +180,13 @@ function preloadFilters() {
   });
 }
 
+//dialogues===================================================================//
 function preloadDialogues() {
   const dialogues = [
     { name: "speech_bubble_1", path: "dialogues/speech_bubble_1.png" },
     { name: "speech_bubble_2", path: "dialogues/speech_bubble_2.png" },
-    { name: "thought_bubble_1", path: "dialogues/thought_bubble_1.png" },
-    { name: "thought_bubble_2", path: "dialogues/thought_bubble_2.png" }
+    { name: "pixel_bubble_1", path: "dialogues/pixel_bubble_1.png" },
+    { name: "pixel_bubble_2", path: "dialogues/pixel_bubble_2.png" }
   ];
 
   dialogues.forEach(d => {
@@ -202,6 +198,7 @@ function preloadDialogues() {
   });
 }
 
+//Grains===================================================================//
 function preloadGrains() {
   const grains = [
     { name: "oldfilm", path: "textures/Old Film.mp4" },
@@ -224,8 +221,10 @@ function preloadGrains() {
   });
 }
 
+
+//fonts===================================================================//
 async function preloadFonts() {
-  const fontsToLoad = ['32px FontTime', '32px FontLiS'];
+  const fontsToLoad = ['32px FontTime', '32px FontPixel', '3px MyFont'];
   try {
     await Promise.all(fontsToLoad.map(f => document.fonts.load(f)));
     safeLog('Fonts loaded');
@@ -234,7 +233,7 @@ async function preloadFonts() {
   }
 }
 
-/* Single entrypoint to preload assets */
+//Preload assets========================================//
 function preloadAll() {
   preloadThemes();
   preloadFilters();
@@ -244,9 +243,7 @@ function preloadAll() {
 }
 preloadAll();
 
-/* ===========================
-   Face-api model loader (with CDN fallback)
-   =========================== */
+//Load face models======================================== //
 async function loadFaceModels() {
   if (faceModelsLoaded) return true;
   if (typeof faceapi === 'undefined') {
@@ -282,14 +279,11 @@ async function loadFaceModels() {
   }
 }
 
-/* ===========================
-   Drawing helpers: grid, frame, theme
-   =========================== */
-
+//Drawing helpers: grid, frame, theme==============================================//
 function drawOuterFrameTo(ctxRef) {
-  const outerLineWidth = 10;
-  const bottomLineWidth = 100;
-  const topLineWidth = 10;
+  const outerLineWidth = 20;
+  const bottomLineWidth = canvas.height/(8-5/3);
+  const topLineWidth = 20;
 
   ctxRef.strokeStyle = frameColor;
 
@@ -337,7 +331,7 @@ function drawGrid() {
   ctx.strokeStyle = frameColor;
   drawOuterFrameTo(ctx);
 
-  const innerLineWidth = 10;
+  const innerLineWidth = 20;
   ctx.lineWidth = innerLineWidth;
 
   for (let i = 1; i < cols; i++) {
@@ -716,7 +710,7 @@ function drawTimestamp(context, x, y, width, height) {
   const fontFamily = document.fonts && document.fonts.check && document.fonts.check(`12px ${timestampFont}`) ? timestampFont : 'monospace';
 
   // compute position (account for flip applied during capture)
-  const padding = 10;
+  const padding = 20;
   let posX, posY, align;
   switch (timestampPosition) {
     case 'top-left':
@@ -786,7 +780,7 @@ function captureFrame(index) {
 
   // redraw grid lines and theme on top (consistent with original)
   ctx.strokeStyle = frameColor;
-  ctx.lineWidth = 10;
+  ctx.lineWidth = 20;
   for (let i = 1; i < cols; i++) {
     ctx.beginPath();
     ctx.moveTo(i * frameW, 0);
@@ -1071,3 +1065,438 @@ preloadFonts();
 
 /* Initial grid draw */
 drawGrid();
+
+//WEATHER==============================================================================//
+let currentWeather = 'none';
+let leafInterval = null;
+let snowInterval = null;
+let rainInterval = null;
+let petalInterval = null;
+
+// Thêm reference cho weather elements
+const weatherParent = document.querySelector('.weather-parent');
+const weatherSubmenu = document.querySelector('.weather-submenu');
+const weatherOptions = weatherSubmenu.querySelectorAll('li');
+
+/* ===========================
+   Weather event listeners
+   =========================== */
+// Mở/đóng weather menu
+weatherParent.addEventListener('click', (e) => {
+  e.stopPropagation();
+  weatherSubmenu.style.display = weatherSubmenu.style.display === 'block' ? 'none' : 'block';
+});
+
+// Chọn weather option
+weatherOptions.forEach(opt => {
+  opt.addEventListener('click', (e) => {
+    e.stopPropagation();
+    currentWeather = opt.dataset.value;
+    
+    // Cập nhật giao diện hoặc thực hiện hành động tương ứng
+    updateWeatherEffects();
+    
+    // Đóng menu sau khi chọn
+    weatherSubmenu.style.display = 'none';
+  });
+});
+document.addEventListener('click', () => {
+  weatherSubmenu.style.display = 'none';
+});
+
+//chạy hiệu ứng========================
+function updateWeatherEffects() {
+  stopCreatingNewWeatherEffects();
+    switch(currentWeather) {
+    case 'none':
+      break;
+    case 'spring':
+      createFlowerPetals();
+      break;
+    case 'summer':
+      startRain();
+      break;
+    case 'autumn':
+      startLeafFall();
+      break;
+    case 'winter':
+      startSnowFall();
+      break;
+  }
+  safeLog(`Weather changed to: ${currentWeather}`);
+}
+
+//Hoa đào======================================================================//
+function createFlowerPetals() {
+//mật đô=============================
+  petalInterval = setInterval(() => {
+    if (currentWeather === 'spring') {
+      createPetal();
+    }
+  }, Math.random() * 200 + 150);
+}
+function createPetal() {
+  if (currentWeather !== 'spring') return;
+  const petal = document.createElement('div');
+  petal.classList.add('leaf');
+  petal.innerHTML = '🌸';
+//kích thước==================================
+  const size = Math.random() * 25 + 15;
+  petal.style.fontSize = `${size}px`;
+  petal.style.left = `${Math.random() * 100}vw`;
+//tốc độ======================================
+  const duration = Math.random() * 20 + 12;
+  const sway = Math.random() * 80 - 40;
+
+  petal.style.setProperty('--sway', `${sway}px`);
+  petal.style.animation = `leaf-fall ${duration}s linear forwards`;
+  petal.style.opacity = Math.random() * 0.6 + 0.4;
+  
+  document.body.appendChild(petal);
+//tự động biến mất===============================
+  setTimeout(() => {
+    if (petal.parentNode) petal.remove();
+  }, duration * 5000);
+}
+
+//Mưa=====================================================================//
+function startRain() {
+  createRaindrop();
+  //mật độ===================================
+  rainInterval = setInterval(() => {
+    if (currentWeather === 'summer') {
+      createRaindrop();
+      if (Math.random() > 0.5) {
+        setTimeout(() => createRaindrop(), 50);
+      }
+      if (Math.random() > 0.7) {
+        setTimeout(() => createRaindrop(), 100);
+      }
+    }
+  }, 10);
+}
+function createRaindrop() {
+  if (currentWeather !== 'summer') return;
+  const raindrop = document.createElement('div');
+  raindrop.classList.add('raindrop');
+  
+//Tạo giọt mưa bằng CSS thay vì emoji==================================
+  raindrop.style.width = '2px';
+  raindrop.style.height = '20px';
+  raindrop.style.background = 'linear-gradient(to bottom, transparent, #a0d0ff, #70b0ff)';
+  raindrop.style.borderRadius = '1px';
+  
+// Vị trí==========================================
+  raindrop.style.left = `${Math.random() * 100}vw`;
+  
+// Tốc độ rơi=========================================
+  const duration = Math.random() * 0.8 + 0.4;
+  raindrop.style.animation = `rain-fall ${duration}s linear forwards`;
+  
+//Độ mờ==========================================
+  raindrop.style.opacity = Math.random() * 0.7 + 0.3;
+  
+//Độ dài giọt mưa============================
+  const length = Math.random() * 15 + 10;
+  raindrop.style.height = `${length}px`;
+  
+//Độ rộng============================
+  const width = Math.random() * 1 + 1;
+  raindrop.style.width = `${width}px`;
+  
+  document.body.appendChild(raindrop);
+  
+//Tự động xóa======================
+  setTimeout(() => {
+    if (raindrop.parentNode) {
+      raindrop.remove();
+    }
+  }, duration * 1000);
+}
+
+//Leaf fall functions==========================================================//
+function startLeafFall() {
+//Mật độ=======================================================
+  createLeaf();
+  leafInterval = setInterval(() => {
+    if (currentWeather === 'autumn') {
+      createLeaf();
+    }
+  }, Math.random() * 150 + 100);
+}
+function createLeaf() {
+  if (currentWeather !== 'autumn') return;
+  const leaf = document.createElement('div');
+  leaf.classList.add('leaf');
+  
+//Các loại lá mùa thu=========================================
+  const leaves = ['🍁', '🍂'];
+  const randomLeaf = leaves[Math.floor(Math.random() * leaves.length)];
+  leaf.innerHTML = randomLeaf;
+  
+//Kích thước==================================================
+  const size = Math.random() * 30 + 15;
+  leaf.style.fontSize = `${size}px`;
+  
+//Vị trí=========================================================
+  leaf.style.left = `${Math.random() * 100}vw`;
+  
+//Tốc độ rơi====================================================
+  const duration = Math.random() * 10 + 5;
+  const sway = Math.random() * 100 - 50;
+  
+//độ lắc=========================================================
+  leaf.style.setProperty('--sway', `${sway}px`);
+  leaf.style.animation = `leaf-fall ${duration}s linear forwards`;
+  
+//Độ mờ=========================================================
+  leaf.style.opacity = Math.random() * 0.7 + 0.3;
+  
+//Màu sắc====================================================
+  const colors = ['#ff6b35',
+    '#f4a261',
+    '#e76f51',
+    '#e9c46a'
+  ];
+  const randomColor = colors[Math.floor(Math.random() * colors.length)];
+  leaf.style.color = randomColor;
+  document.body.appendChild(leaf);
+
+//Tự động xóa=================================================
+  setTimeout(() => {
+    if (leaf.parentNode) {
+      leaf.remove();
+    }
+  }, duration * 5000);
+}
+
+//Snow===============================================================================//
+function startSnowFall() {
+  createSnowflake();
+  //mật độ===================
+  snowInterval = setInterval(() => {
+    if (currentWeather === 'winter') {
+      createSnowflake();
+    }
+  }, Math.random() * 100 + 75);
+}
+
+//================================//
+function createSnowflake() {
+  if (currentWeather !== 'winter') return;
+  const snowflake = document.createElement('div');
+  snowflake.classList.add('snowflake');
+  snowflake.innerHTML = '❄';
+  
+//Kích thước=================================
+  const size = Math.random() * 20 + 10;
+  snowflake.style.fontSize = `${size}px`;
+  
+//Vị trí=======================================
+  snowflake.style.left = `${Math.random() * 100}vw`;
+  
+//Tốc độ rơi ngẫu nhiên===========================
+  const duration = Math.random() * 8 + 5;
+  snowflake.style.animation = `fall ${duration}s linear forwards`;
+  
+//Độ mờ========================================
+  snowflake.style.opacity = Math.random() * 0.8 + 0.2;
+  
+//Xoay========================================
+  const rotation = Math.random() * 360;
+  snowflake.style.transform = `rotate(${rotation}deg)`;
+  document.body.appendChild(snowflake);
+  
+//Tự động xóa================================
+  setTimeout(() => {
+    if (snowflake.parentNode) {
+      snowflake.remove();
+    }
+  }, duration * 4000);
+}
+
+//hiển thị nốt hiệu ứng sau khi dừng======================================================//
+function stopCreatingNewWeatherEffects() {
+  if (leafInterval) {
+    clearInterval(leafInterval);
+    leafInterval = null;
+  }
+  
+  if (snowInterval) {
+    clearInterval(snowInterval);
+    snowInterval = null;
+  }
+  
+  if (rainInterval) {
+    clearInterval(rainInterval);
+    rainInterval = null;
+  }
+  
+  if (petalInterval) {
+    clearInterval(petalInterval);
+    petalInterval = null;
+  }
+}
+
+//================================================
+document.addEventListener('DOMContentLoaded', function() {
+  updateWeatherEffects();
+});
+
+// ===========================
+// Music controls & lyrics
+// ===========================
+let currentMusic = 'none';
+let lyricsInterval = null;
+let currentLyricIndex = 0;
+
+// Thêm reference cho music elements
+const musicParent = document.querySelector('.music-parent');
+const musicSubmenu = document.querySelector('.music-submenu');
+const musicOptions = musicSubmenu.querySelectorAll('li');
+const lyricsContainer = document.getElementById('lyricsContainer');
+const lyricsText = document.getElementById('lyricsText');
+
+// Lời bài hát "Nơi này có anh" với thời gian hiển thị riêng cho mỗi câu (đơn vị: milliseconds)
+const noiNayCoAnhLyrics = [
+  { text: "Em là ai bước đến nơi đây dịu dàng chân phương", duration: 5000 },
+  { text: "Em là ai tựa như ánh nắng ban mai ngọt ngào trong sương", duration: 4500 },
+  { text: "Ngắm em thật lâu", duration: 2000 },
+  { text: "Con tim anh yếu mềm", duration: 2000 },
+  { text: "Đắm say từ phút đó", duration: 2000 },
+  { text: "Từng giây trôi yêu thêm", duration: 3000 },
+  { text: "Bao ngày qua bình minh đánh thức xua tan bộn bề nơi anh", duration: 4500 },
+  { text: "Bao ngày qua niềm thương nỗi nhớ bay theo bầu trời trong xanh", duration: 4500 },
+  { text: "Liếc đôi hàng mi", duration: 2000 },
+  { text: "Mong manh anh thẫn thờ", duration: 2500 },
+  { text: "Muốn hôn nhẹ mái tóc", duration: 1750 },
+  { text: "Bờ môi em anh mơ", duration: 2500 },
+  { text: "Cầm tay anh dựa vai anh", duration: 2000 },
+  { text: "Kề bên anh nơi này có anh", duration: 2000 },
+  { text: "Gió mang câu tình ca", duration: 1400 },
+  { text: "Ngàn ánh sao vụt qua nhẹ ôm lấy em", duration: 3000 },
+  { text: "Cầm tay anh dựa vai anh", duration: 2000 },
+  { text: "Kề bên anh nơi này có anh", duration: 2000 },
+  { text: "Khép đôi mi thật lâu", duration: 1750 },
+  { text: "Nguyện mãi bên cạnh nhau yêu say đắm như ngày đầu", duration: 3200 },
+  { text: "Mùa xuân đến bình yên", duration: 2000 },
+  { text: "Cho anh những giấc mơ", duration: 2000 },
+  { text: "Hạ lưu giữ ngày mưa", duration: 2000 },
+  { text: "Ngọt ngào nên thơ", duration: 2000 },
+  { text: "Mùa thu lá vàng rơi", duration: 2000 },
+  { text: "Đông sang anh nhớ em", duration: 2000 },
+  { text: "Tình yêu bé nhỏ xin", duration: 2000 },
+  { text: "Dành tặng riêng em", duration: 2000 },  
+  { text: "𝅘𝅥𝅯 𝅘𝅥 𝅘𝅥𝅮 𝅘𝅥𝅯 𝅘𝅥 𝅘𝅥𝅮", duration: 6 }, 
+];
+
+/* Music event listeners */
+// Mở/đóng music menu
+musicParent.addEventListener('click', (e) => {
+  e.stopPropagation();
+  musicSubmenu.style.display = musicSubmenu.style.display === 'block' ? 'none' : 'block';
+});
+
+// Chọn music option
+musicOptions.forEach(opt => {
+  opt.addEventListener('click', (e) => {
+    e.stopPropagation();
+    currentMusic = opt.dataset.value;
+    
+    // Cập nhật hiển thị lời bài hát
+    updateMusicEffects();
+    
+    // Đóng menu sau khi chọn
+    musicSubmenu.style.display = 'none';
+  });
+});
+
+document.addEventListener('click', () => {
+  musicSubmenu.style.display = 'none';
+});
+
+// Cập nhật hiệu ứng âm nhạc và lời bài hát
+function updateMusicEffects() {
+  stopCurrentMusic();
+  
+  switch(currentMusic) {
+    case 'none':
+      hideLyrics();
+      break;
+    case 'Nơi này có anh':
+      showLyrics();
+      startLyricsDisplay();
+      break;
+  }
+  safeLog(`Music changed to: ${currentMusic}`);
+}
+
+// Dừng nhạc hiện tại
+function stopCurrentMusic() {
+  if (lyricsInterval) {
+    clearInterval(lyricsInterval);
+    lyricsInterval = null;
+  }
+  currentLyricIndex = 0;
+}
+
+// Hiển thị container lời bài hát
+function showLyrics() {
+  lyricsContainer.style.display = 'block';
+  lyricsText.textContent = '';
+  lyricsText.classList.remove('show');
+}
+
+// Ẩn container lời bài hát
+function hideLyrics() {
+  lyricsContainer.style.display = 'none';
+  lyricsText.classList.remove('show');
+}
+
+// Bắt đầu hiển thị lời bài hát
+function startLyricsDisplay() {
+  if (currentMusic !== 'Nơi này có anh') return;
+  
+  currentLyricIndex = 0;
+  
+  // Hiển thị lời đầu tiên ngay lập tức
+  displayNextLyric();
+}
+
+// Hiển thị lời bài hát tiếp theo
+function displayNextLyric() {
+  if (currentMusic !== 'Nơi này có anh') return;
+  
+  if (currentLyricIndex >= noiNayCoAnhLyrics.length) {
+    currentLyricIndex = 0; // Quay lại từ đầu khi hết bài
+  }
+  
+  const currentLyric = noiNayCoAnhLyrics[currentLyricIndex];
+  
+  // Ẩn lời cũ với hiệu ứng
+  lyricsText.classList.remove('show');
+  
+  // Sau khi ẩn, cập nhật lời mới và hiện lại
+  setTimeout(() => {
+    lyricsText.textContent = currentLyric.text;
+    lyricsText.classList.add('show');
+    
+    // Tăng index cho lần tiếp theo
+    currentLyricIndex++;
+    
+    // Thiết lập timeout cho lời tiếp theo với thời gian riêng
+    if (currentLyricIndex < noiNayCoAnhLyrics.length || currentMusic === 'Nơi này có anh') {
+      const nextLyric = noiNayCoAnhLyrics[currentLyricIndex];
+      const displayTime = currentLyric.duration;
+      
+      lyricsInterval = setTimeout(() => {
+        displayNextLyric();
+      }, displayTime);
+    }
+  }, 0); // Thời gian fade out
+}
+
+// Khởi tạo khi trang load
+document.addEventListener('DOMContentLoaded', function() {
+  updateMusicEffects();
+});

@@ -18,46 +18,49 @@
   
   <header>
     <div class="header-content">
-      <div class="logo">PooNoobooth</div>
-      <a href="https://www.instagram.com/fuownguyen/" target="_blank" class="logoinstagram">
-        <img src="icons/instagram_icon.png" class="instagram_icon" alt="Instagram">
-      </a>
+      <!-- Container bên trái cho weather -->
+      <div class="header-left">
+        <div class="logo">PooNoobooth</div>
+        <li class="weather-parent">
+          <img src="icons/weather_icon.png" class="weather_icon" alt="weather">
+          <ul class="weather-submenu">
+            <li data-value="none">none</li>
+            <li data-value="spring">spring</li>
+            <li data-value="summer">summer</li>
+            <li data-value="autumn">autumn</li>
+            <li data-value="winter">winter</li>
+          </ul>
+        </li>
+        <li class="music-parent">
+          <img src="icons/music_icon.png" class="music_icon" alt="music">
+          <ul class="music-submenu">
+            <li data-value="none">none</li>
+            <li data-value="Nơi này có anh">Nơi này có anh</li>
+          </ul>
+        </li>
+      </div>
+      
+      <!-- Container bên phải cho social -->
+      <div class="header-right">
+        <div class="social-container">
+          <a href="https://www.instagram.com/fuownguyen/" target="_blank" class="logoinstagram">
+            <img src="icons/instagram_icon.png" class="instagram_icon" alt="Instagram">
+          </a>
+        </div>
+      </div>
     </div>
   </header>
+
+
+
 
   <main>
     <div class="app-container">
       <!-- Camera -->
       <section class="camera-section">
-        <h2 class="camera-title" id="cameraTitle">Ai mà xinh thế 😳</h2>
-
-        <script>
-          const cameraTitles = [
-            "Xinh vãi ò",
-            "Con vợ xinh ác",
-            "Gương kia ngự ở trên tường...",
-            "Ig mình trên kia đó",
-            "Lạc vào khu rừng hoa🌼🌸🌺🏵️🌻🌷🌹"
-          ];
-
-          let previousIndex = -1;
-
-          function changeCameraTitle() {
-            const titleElement = document.getElementById('cameraTitle');
-            let newIndex;
-            
-            do {
-              newIndex = Math.floor(Math.random() * cameraTitles.length);
-            } while (newIndex === previousIndex && cameraTitles.length > 1);
-            
-            titleElement.textContent = cameraTitles[newIndex];
-            previousIndex = newIndex;
-          }
-
-          changeCameraTitle();
-          setInterval(changeCameraTitle, 4000);
-        </script>
-
+        <div id="lyricsContainer" class="lyrics-container" style="display: none;">
+          <div id="lyricsText" class="lyrics-text"></div>
+        </div>
         <div class="video-container">
           <video id="video" autoplay playsinline></video>
           <canvas id="overlay" width="480" height="360"></canvas>
@@ -120,32 +123,34 @@
             <label for="dialogueToggle">Hiển thị dialogue:</label>
             <input type="checkbox" id="dialogueToggle"/>
           </div>
-
+          
           <div class="dialogue-controls-container" id="dialogueControls">
+            <div class="control-group">
+              <label for="dialogueText">Nội dung:</label>
+              <input type="text" id="dialogueText" placeholder="Nhập văn bản..." />
+            </div>
             <div class="control-group">
               <label for="dialogueSelect">Chọn dialogue:</label>
               <select id="dialogueSelect">
                 <option value="none">Không</option>
                 <option value="speech_bubble_1">Bong bóng 1</option>
                 <option value="speech_bubble_2">Bong bóng 2</option>
+                <option value="pixel_bubble_1">Bong bóng pixel</option>
               </select>
-            </div>
-            <div class="control-group">
-              <label for="dialogueScale">Độ lớn dialogue:</label>
-              <input type="range" id="dialogueScale" min="50" max="200" value="100" />
-              <span id="dialogueScaleValue">100%</span>
-            </div>
+              </div>
+              <div class="control-group">
+                <label for="dialogueScale"></label>
+                <input type="range" id="dialogueScale" min="50" max="200" value="100" />
+                <span id="dialogueScaleValue">100%</span>
+              </div>
 
-            <div class="control-group">
-              <label for="dialogueText">Nội dung:</label>
-              <input type="text" id="dialogueText" placeholder="Nhập văn bản..." />
-            </div>
+            
 
             <div class="control-group">
               <label for="dialogueFont">Phông chữ:</label>
               <select id="dialogueFont">
                 <option value="MyFont">Manga Font</option>
-                <option value="FontLiS">duducaligraphy</option>
+                <option value="FontPixel">Pixel Font</option>
               </select>
             </div>
 
@@ -185,6 +190,8 @@
               <option value="Đi làm">Đi làm</option>
               <option value="Danisa">Danisa</option>
               <option value="Dont starve together 1">Dont starve together 1</option>
+              <option value="MCK">MCK</option>
+
             </select>
           </div>
 
@@ -194,6 +201,8 @@
               <div class="selected">Không</div>
               <ul class="select-menu">
                 <li data-value="none">Không</li>
+                <li data-value="Sơn Tùng-MTP">Sơn Tùng-MTP</li>
+
                 <li class="dst-parent">Colt →
                   <ul class="dst-submenu">
                     <li data-value="mũ đầu bếp">mũ đầu bếp</li>
@@ -267,7 +276,7 @@
       <section class="canvas-section">
         <h2 class="canvas-title">Photo</h2>
         <div class="canvas-container">
-          <canvas id="canvas" width="480" height="640"></canvas>
+          <canvas id="canvas" width="960" height="1280"></canvas>
         </div>
       </section>
     </div>
