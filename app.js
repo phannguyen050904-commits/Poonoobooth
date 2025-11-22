@@ -73,6 +73,11 @@ let grainOpacity = 0.25;
 let detectionInProgress = false;
 let animationFrameId = null;
 let faceModelsLoaded = false;
+/* App state */
+let showGrid = true; // Thêm dòng này
+// Thêm reference mới
+const gridToggle = document.getElementById('gridToggle');
+// ... các state khác giữ nguyên
 
 /* Canvas grid layout (3 rows x 2 cols) */
 
@@ -179,40 +184,45 @@ function updateCanvasLayout(layout) {
 
 
 function drawGrid() {
+  
   // base background
   ctx.fillStyle = '#eee';
-  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // main strokes
-  ctx.strokeStyle = frameColor;
-  drawOuterFrameTo(ctx);
+  // main strokes - CHỈ VẼ NẾU SHOWGRID = TRUE
+  if (showGrid) {
+    ctx.strokeStyle = frameColor;
+    drawOuterFrameTo(ctx);
 
-  const innerLineWidth = 20;
-  ctx.lineWidth = innerLineWidth;
-  // Vertical lines (only if more than 1 column)
-  if (cols > 1) {
-    for (let i = 1; i < cols; i++) {
-      ctx.beginPath();
-      ctx.moveTo(i * frameW, 0);
-      ctx.lineTo(i * frameW, canvasHeight);
-      ctx.stroke();
+    const innerLineWidth = 20;
+    ctx.lineWidth = innerLineWidth;
+
+    // Vertical lines (only if more than 1 column)
+    if (cols > 1) {
+      for (let i = 1; i < cols; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * frameW, 0);
+        ctx.lineTo(i * frameW, canvas.height);
+        ctx.stroke();
+      }
     }
-  }
 
-  // Horizontal lines (only if more than 1 row)
-  if (rows > 1) {
-    for (let i = 1; i < rows; i++) {
-      ctx.beginPath();
-      ctx.moveTo(0, i * frameH);
-      ctx.lineTo(canvasWidth, i * frameH);
-      ctx.stroke();
+    // Horizontal lines (only if more than 1 row)
+    if (rows > 1) {
+      for (let i = 1; i < rows; i++) {
+        ctx.beginPath();
+        ctx.moveTo(0, i * frameH);
+        ctx.lineTo(canvas.width, i * frameH);
+        ctx.stroke();
+      }
     }
   }
 
   drawThemeOverlayTo(ctx);
 }
-
 function drawOuterFrameTo(ctxRef) {
+  if (!showGrid) return; // Thêm dòng này - không vẽ outer frame nếu grid bị ẩn
+
   const outerLineWidth = 20;
   const bottomLineWidth = bottomPadding || 20;
   const topLineWidth = 20;
@@ -456,33 +466,6 @@ function drawThemeOverlayTo(ctxRef) {
   }
 }
 
-function drawGrid() {
-  // base background
-  ctx.fillStyle = '#eee';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // main strokes
-  ctx.strokeStyle = frameColor;
-  drawOuterFrameTo(ctx);
-
-  const innerLineWidth = 20;
-  ctx.lineWidth = innerLineWidth;
-
-  for (let i = 1; i < cols; i++) {
-    ctx.beginPath();
-    ctx.moveTo(i * frameW, 0);
-    ctx.lineTo(i * frameW, canvas.height);
-    ctx.stroke();
-  }
-  for (let i = 1; i < rows; i++) {
-    ctx.beginPath();
-    ctx.moveTo(0, i * frameH);
-    ctx.lineTo(canvas.width, i * frameH);
-    ctx.stroke();
-  }
-
-  drawThemeOverlayTo(ctx);
-}
 
 /* ===========================
    Grain overlay (video) helpers
@@ -973,6 +956,7 @@ function captureFrame(index) {
       offsetY, 
       drawWidth, 
       drawHeight
+
     );
   }
 
@@ -986,10 +970,19 @@ function captureFrame(index) {
 
   // Redraw grid lines and theme on top
   redrawGridLines();
+  if (showGrid) {
+    redrawGridLines();
+  } else {
+    // Nếu grid bị ẩn, chỉ vẽ theme overlay
+    drawThemeOverlayTo(ctx);
+  }
 }
+
 
 // Hàm phụ trợ để vẽ lại grid lines
 function redrawGridLines() {
+  if (!showGrid) return; // Thêm dòng này - không vẽ grid lines nếu bị ẩn
+
   ctx.strokeStyle = frameColor;
   ctx.lineWidth = 20;
   
@@ -1061,6 +1054,10 @@ canvasLayoutSelect.addEventListener('change', (e) => {
 /* ===========================
    Event listeners
    =========================== */
+gridToggle.addEventListener('change', (e) => {
+  showGrid = e.target.checked;
+  drawGrid(); // Redraw grid với trạng thái mới
+});
 
 // Thêm phần khởi tạo khi trang load
 document.addEventListener('DOMContentLoaded', function() {
@@ -1085,11 +1082,13 @@ frameColorPicker.addEventListener('input', (e) => {
 });
 
 // Theme change
+// Theme change - SỬA PHẦN NÀY
 themeSelected.addEventListener("click", (e) => {
   e.stopPropagation();
   themeSelect.classList.toggle("open");
 });
 
+// Event listeners cho main theme options
 themeOptions.forEach(opt => {
   opt.addEventListener("click", (e) => {
     const value = opt.dataset.value;
@@ -1099,8 +1098,22 @@ themeOptions.forEach(opt => {
     drawGrid();
   });
 });
-// Thêm vào phần Event listeners, sau phần themeOptions
 
+// THÊM PHẦN NÀY - Event listeners cho theme submenu options
+themeSubOptions.forEach(opt => {
+  opt.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const value = opt.dataset.value;
+    
+    // Tìm tên theme từ text content của parent
+    const parentText = opt.closest('.theme-parent').textContent.split('→')[0].trim();
+    themeSelected.textContent = `${parentText} - ${opt.textContent}`;
+    
+    themeSelect.classList.remove("open");
+    currentTheme = value;
+    drawGrid();
+  });
+});
 
 // Đóng menu khi click ra ngoài
 document.addEventListener("click", () => {
@@ -1746,3 +1759,4 @@ document.addEventListener('DOMContentLoaded', function() {
   updateCanvasLayout('3x2'); // hoặc layout mặc định bạn muốn
   // ... các khởi tạo khác
 });
+
