@@ -21,6 +21,13 @@
       <!-- Container bên trái cho weather -->
       <div class="header-left">
         <div class="logo">PooNoobooth</div>
+        <li class="music-parent">
+          <img src="icons/music_icon.png" class="music_icon" alt="music">
+          <ul class="music-submenu">
+            <li data-value="none">none</li>
+            <li data-value="Nơi này có anh">Nơi này có anh</li>
+          </ul>
+        </li>
         <li class="weather-parent">
           <img src="icons/weather_icon.png" class="weather_icon" alt="weather">
           <ul class="weather-submenu">
@@ -29,13 +36,6 @@
             <li data-value="summer">summer</li>
             <li data-value="autumn">autumn</li>
             <li data-value="winter">winter</li>
-          </ul>
-        </li>
-        <li class="music-parent">
-          <img src="icons/music_icon.png" class="music_icon" alt="music">
-          <ul class="music-submenu">
-            <li data-value="none">none</li>
-            <li data-value="Nơi này có anh">Nơi này có anh</li>
           </ul>
         </li>
       </div>
@@ -63,7 +63,7 @@
         </div>
         <div class="video-container">
           <video id="video" autoplay playsinline></video>
-          <canvas id="overlay" width="480" height="360"></canvas>
+          <canvas id="overlay"></canvas> 
         </div>
         
         <div class="controls">
@@ -104,10 +104,10 @@
             <div class="control-group">
               <label for="timestampPosition">Vị trí:</label>
               <select id="timestampPosition">
-                <option value="top-left">Trên trái</option>
-                <option value="top-right">Trên phải</option>
-                <option value="bottom-left">Dưới trái</option>
-                <option value="bottom-right">Dưới phải</option>
+                <option value="top-left">Trên phải</option>
+                <option value="top-right">Trên trái</option>
+                <option value="bottom-left">Dưới phải</option>
+                <option value="bottom-right">Dưới trái</option>
                 <option value="bottom-center">Dưới giữa</option>
               </select>
             </div>
@@ -177,24 +177,51 @@
             <label for="countdownTime">Đếm ngược (s):</label>
             <input type="number" id="countdownTime" min="1" max="10" value="5" />
           </div>
+          <div class="control-group">
+          <label for="canvasLayout">Canvas Layout:</label>
+          <select id="canvasLayout">
+            <option value="3x2">3:2</option>
+            <option value="4x1">4:1</option>
+            <option value="2x2">2:2</option>
+            <option value="2x1">2:1</option>
+            <option value="1x1">1:1</option>
+          </select>
+        </div>
 
           <div class="control-group">
             <label for="frameColor">Màu viền:</label>
             <input type="color" id="frameColor" value="#4f6d8f" />
           </div>
-
+<!-- Tìm phần theme select và thay thế bằng code này -->
           <div class="control-group">
             <label for="themeSelect">Chủ đề:</label>
-            <select id="themeSelect">
-              <option value="none">Không</option>
-              <option value="Đi làm">Đi làm</option>
-              <option value="Danisa">Danisa</option>
-              <option value="Dont starve together 1">Dont starve together 1</option>
-              <option value="MCK">MCK</option>
-
-            </select>
+            <div class="custom-select" id="themeSelect">
+              <div class="selected">Không</div>
+              <ul class="select-menu">
+                <li data-value="none">Không</li>
+                <li class="theme-parent">3:2 →
+                  <ul class="theme-submenu">
+                    <li data-value="Danisa">Danisa</li>
+                    <li data-value="Dont starve together 1">Dont starve together 1</li>
+                  </ul>
+                </li>
+                <li class="theme-parent">4:1 →
+                  <ul class="theme-submenu">
+                    <li data-value="GAMTIME">GAMTIME</li>
+                  </ul>
+                </li>
+                <li class="theme-parent">2:2 →
+                  <ul class="theme-submenu">
+                  </ul>
+                </li>
+                <li class="theme-parent">2:1 →
+                  <ul class="theme-submenu">
+                  </ul>
+                </li>
+              </ul>
+            </div>
           </div>
-
+          
           <div class="control-group">
             <label>Filter</label>
             <div class="custom-select" id="filterSelect">
@@ -276,7 +303,7 @@
       <section class="canvas-section">
         <h2 class="canvas-title">Photo</h2>
         <div class="canvas-container">
-          <canvas id="canvas" width="960" height="1280"></canvas>
+          <canvas id="canvas"></canvas>
         </div>
       </section>
     </div>

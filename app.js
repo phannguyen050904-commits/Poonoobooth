@@ -23,7 +23,6 @@ const statusText = document.getElementById('status');
 
 const frameColorPicker = document.getElementById('frameColor');
 const countdownInput = document.getElementById('countdownTime');
-const themeSelect = document.getElementById('themeSelect');
 const grainSelect = document.getElementById('grainSelect');
 const grainOpacitySlider = document.getElementById('grainOpacity');
 const grainOpacityValue = document.getElementById('grainOpacityValue');
@@ -52,6 +51,11 @@ const dialogueSizeInput = document.getElementById('dialogueSize');
 const dialogueColorInput = document.getElementById('dialogueColor');
 const dialoguePositionSel = document.getElementById('dialoguePosition');
 
+//theme==========================================================
+const themeSelected = themeSelect.querySelector('.selected');
+const themeOptions = themeSelect.querySelectorAll('.select-menu > li:not(.theme-parent)');
+const themeSubOptions = themeSelect.querySelectorAll('.theme-submenu li');
+
 //App state=================================================//
 let frameColor = '#4f6d8f';
 let currentTheme = 'none';
@@ -71,11 +75,6 @@ let animationFrameId = null;
 let faceModelsLoaded = false;
 
 /* Canvas grid layout (3 rows x 2 cols) */
-const rows = 3;
-const cols = 2;
-const bottomPadding = canvas.height/(8-5/3);
-const frameW = canvas.width / cols;
-const frameH = (canvas.height- bottomPadding)/ rows;
 
 /* Timestamp state */
 let showTimestamp = false;
@@ -85,6 +84,10 @@ let timestampSize = 36;
 let timestampColor = '#ffffff';
 let timestampPosition = 'bottom-right';
 let customTimestampFormat = '';
+
+let isDraggingTimestamp = false;
+let timestampDragOffset = { x: 0, y: 0 };
+let customTimestampPosition = { x: 50, y: 50 }; // Vị trí mặc định
 
 /* Dialogue state */
 /* Dialogue state */
@@ -97,12 +100,174 @@ let dialogueColor = '#000000';
 let dialoguePosition = 'top-left';
 let dialogueScale = 1.0; // Thêm dòng này
 
+let currentCanvasLayout = '1x1';
+let canvasWidth = 960;
+let canvasHeight = 1280;
+let rows = 3;
+let cols = 2;
+let frameW, frameH, bottomPadding;
+let leftside = 0;
+let rightside = 0;
+// Layout configurations==============================================
 //
 const $ = id => document.getElementById(id);
 
 function safeLog(...args) { console.log(...args); }
 function safeErr(...args) { console.error(...args); }
+const canvasLayouts = {
+  '3x2': { width: 960, height: 1280, rows: 3, cols: 2, bottomPadding: 1280/(8-5/3), side: 0 },
+  '4x1': { width: 480, height: 1440, rows: 4, cols: 1, bottomPadding: 120, rightside: 20 , leftside: 20},
+  '2x2': { width: 960, height: 960, rows: 2, cols: 2, bottomPadding: 240 },
+  '2x1': { width: 480, height: 960, rows: 2, cols: 1, bottomPadding: 240 },
+  '1x1': { width: 480, height: 640, rows: 1, cols: 1, bottomPadding: 160 }
+};
+const videoContainer = document.querySelector('.video-container');
 
+// Thêm hàm cập nhật tỷ lệ video
+// Thêm hàm cập nhật tỷ lệ video
+function updateVideoAspectRatio(layout) {
+  if (!videoContainer) return;
+  
+  switch(layout) {
+    case '1x1':
+      videoContainer.style.aspectRatio = '1 / 1';
+      videoContainer.style.maxWidth = '480px'; // Kích thước 480px
+      videoContainer.classList.add('aspect-1-1');
+      break;
+    case '3x2':
+    case '4x1':
+    case '2x2':
+    case '2x1':
+    default:
+      videoContainer.style.aspectRatio = '4 / 3';
+      videoContainer.style.maxWidth = '480px';
+      videoContainer.classList.remove('aspect-1-1');
+      break;
+  }
+}
+
+function updateCanvasLayout(layout) {
+  if (!canvasLayouts[layout]) return;
+  
+  currentCanvasLayout = layout;
+  const config = canvasLayouts[layout];
+  
+  canvasWidth = config.width;
+  canvasHeight = config.height;
+  rows = config.rows;
+  cols = config.cols;
+  bottomPadding = config.bottomPadding;
+  
+  // THÊM DÒNG NÀY - khởi tạo leftside và rightside
+  leftside = config.leftside || 0;
+  rightside = config.rightside || 0;
+
+  // Update canvas dimensions
+  canvas.width = canvasWidth;
+  canvas.height = canvasHeight;
+  
+  // Recalculate frame dimensions với leftside và rightside
+  frameW = (canvasWidth - leftside - rightside) / cols;
+  frameH = (canvasHeight - bottomPadding) / rows;
+  
+  // Cập nhật tỷ lệ video preview
+  updateVideoAspectRatio(layout);
+  
+  // Redraw grid
+  drawGrid();
+}
+
+
+function drawGrid() {
+  // base background
+  ctx.fillStyle = '#eee';
+  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+  // main strokes
+  ctx.strokeStyle = frameColor;
+  drawOuterFrameTo(ctx);
+
+  const innerLineWidth = 20;
+  ctx.lineWidth = innerLineWidth;
+  // Vertical lines (only if more than 1 column)
+  if (cols > 1) {
+    for (let i = 1; i < cols; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * frameW, 0);
+      ctx.lineTo(i * frameW, canvasHeight);
+      ctx.stroke();
+    }
+  }
+
+  // Horizontal lines (only if more than 1 row)
+  if (rows > 1) {
+    for (let i = 1; i < rows; i++) {
+      ctx.beginPath();
+      ctx.moveTo(0, i * frameH);
+      ctx.lineTo(canvasWidth, i * frameH);
+      ctx.stroke();
+    }
+  }
+
+  drawThemeOverlayTo(ctx);
+}
+
+function drawOuterFrameTo(ctxRef) {
+  const outerLineWidth = 20;
+  const bottomLineWidth = bottomPadding || 20;
+  const topLineWidth = 20;
+
+  ctxRef.strokeStyle = frameColor;
+
+  // Outer rectangles (left and right lines)
+  ctxRef.lineWidth = outerLineWidth;
+  ctxRef.beginPath();
+  ctxRef.moveTo(outerLineWidth / 2, outerLineWidth / 2);
+  ctxRef.lineTo(canvasWidth - outerLineWidth / 2, outerLineWidth / 2);
+  ctxRef.moveTo(outerLineWidth / 2, outerLineWidth / 2);
+  ctxRef.lineTo(outerLineWidth / 2, canvasHeight - outerLineWidth / 2);
+  ctxRef.moveTo(canvasWidth - outerLineWidth / 2, outerLineWidth / 2);
+  ctxRef.lineTo(canvasWidth - outerLineWidth / 2, canvasHeight - outerLineWidth / 2);
+  ctxRef.stroke();
+
+  // Bottom thick line (only if bottomPadding exists)
+  if (bottomPadding > 0) {
+    ctxRef.lineWidth = bottomLineWidth;
+    ctxRef.beginPath();
+    
+    // Tùy chỉnh độ dài bottom line theo layout
+    let shortBottomWidth;
+    
+    switch(currentCanvasLayout) {
+      case '4x1':
+        shortBottomWidth = canvasWidth * 1; // Ngắn bằng 60% chiều rộng
+        break;
+      case '3x2':
+        shortBottomWidth = canvasWidth * 1; // Ngắn bằng 80% chiều rộng
+        break;
+      case '2x2':
+        shortBottomWidth = canvasWidth * 1; // Ngắn bằng 70% chiều rộng
+        break;
+      case '1x1':
+        shortBottomWidth = canvasWidth * 1; // Ngắn bằng 50% chiều rộng
+        break;
+      default:
+        shortBottomWidth = canvasWidth; // Mặc định full width
+    }
+    
+    const startX = (canvasWidth - shortBottomWidth) / 2; // Căn giữa
+    ctxRef.moveTo(startX, canvasHeight - bottomLineWidth / 2);
+    ctxRef.lineTo(startX + shortBottomWidth, canvasHeight - bottomLineWidth / 2);
+    ctxRef.stroke();
+  }
+
+  // Top thin line
+  ctxRef.lineWidth = topLineWidth;
+  ctxRef.beginPath();
+  ctxRef.moveTo(0, topLineWidth / 2);
+  ctxRef.lineTo(canvasWidth, topLineWidth / 2);
+  ctxRef.stroke();
+}
 //camera setup==========================================================================//
 async function startCamera() {
   try {
@@ -116,7 +281,7 @@ startCamera();
 
 //Preloaders: themes, filters, grains, fonts, dialogues=======================================//
 function preloadThemes() {
-  const themes = ['Đi làm', 'Danisa','Dont starve together 1', 'MCK'];
+  const themes = ['Đi làm', 'Danisa','Dont starve together 1', 'MCK','GAMTIME'];
   themes.forEach(name => {
     const img = new Image();
     img.src = `themes/${name}.png`;
@@ -280,38 +445,7 @@ async function loadFaceModels() {
 }
 
 //Drawing helpers: grid, frame, theme==============================================//
-function drawOuterFrameTo(ctxRef) {
-  const outerLineWidth = 20;
-  const bottomLineWidth = canvas.height/(8-5/3);
-  const topLineWidth = 20;
 
-  ctxRef.strokeStyle = frameColor;
-
-  // Outer rectangles (left and right lines)
-  ctxRef.lineWidth = outerLineWidth;
-  ctxRef.beginPath();
-  ctxRef.moveTo(outerLineWidth / 2, outerLineWidth / 2);
-  ctxRef.lineTo(canvas.width - outerLineWidth / 2, outerLineWidth / 2);
-  ctxRef.moveTo(outerLineWidth / 2, outerLineWidth / 2);
-  ctxRef.lineTo(outerLineWidth / 2, canvas.height - outerLineWidth / 2);
-  ctxRef.moveTo(canvas.width - outerLineWidth / 2, outerLineWidth / 2);
-  ctxRef.lineTo(canvas.width - outerLineWidth / 2, canvas.height - outerLineWidth / 2);
-  ctxRef.stroke();
-
-  // Bottom thick line
-  ctxRef.lineWidth = bottomLineWidth;
-  ctxRef.beginPath();
-  ctxRef.moveTo(0, canvas.height - bottomLineWidth / 2);
-  ctxRef.lineTo(canvas.width, canvas.height - bottomLineWidth / 2);
-  ctxRef.stroke();
-
-  // Top thin line
-  ctxRef.lineWidth = topLineWidth;
-  ctxRef.beginPath();
-  ctxRef.moveTo(0, topLineWidth / 2);
-  ctxRef.lineTo(canvas.width, topLineWidth / 2);
-  ctxRef.stroke();
-}
 
 function drawThemeOverlayTo(ctxRef) {
   if (currentTheme !== 'none' && themeImages[currentTheme]) {
@@ -512,38 +646,46 @@ function drawTimestampOnVideo() {
   const fontFamily = document.fonts && document.fonts.check && document.fonts.check(`12px ${timestampFont}`) ? timestampFont : 'monospace';
 
   // Compute position for video (account for horizontal flip)
-  const padding = 25;
+    if (currentCanvasLayout === '1x1') {
+    sidepadding = 100;
+    bottomPadding = 50 // Padding nhỏ hơn cho layout 1x1
+    fontSize = timestampSize * 0.5; // Font size nhỏ hơn một chút
+  } else {
+    sidepadding = 25;
+    bottomPadding = 25 // Padding mặc định cho các layout khác
+    fontSize = timestampSize;
+  }
   let posX, posY, align;
   
   switch (timestampPosition) {
     case 'top-left':
-      posX = overlay.width - padding;
-      posY = padding + timestampSize; 
+      posX = overlay.width - sidepadding;
+      posY = bottomPadding + fontSize; 
       align = 'right';
       break;
     case 'top-right':
-      posX = padding;
-      posY = padding + timestampSize; 
+      posX = sidepadding;
+      posY = bottomPadding + fontSize; 
       align = 'left';
       break;
     case 'bottom-left':
-      posX = overlay.width - padding;
-      posY = overlay.height - padding; 
+      posX = overlay.width - sidepadding;
+      posY = overlay.height - fontSize; 
       align = 'right';
       break;
     case 'bottom-right':
-      posX = padding;
-      posY = overlay.height - padding; 
+      posX = sidepadding;
+      posY = overlay.height - fontSize;; 
       align = 'left';
       break;
     case 'bottom-center':
       posX = overlay.width / 2; 
-      posY = overlay.height - padding; 
+      posY = overlay.height - bottomPaddingpadding; 
       align = 'center';
       break;
     default:
-      posX = padding; 
-      posY = overlay.height - padding; 
+      posX = sidepadding; 
+      posY = overlay.height - bottomPadding; 
       align = 'left';
   }
 
@@ -734,69 +876,146 @@ function drawTimestamp(context, x, y, width, height) {
 
   context.save();
   // flip horizontally so text appears correct after canvas horizontal flip
-  context.translate(width, 0);
-  context.scale(-1, 1);
+  if (currentCanvasLayout === '1x1') {
+    // For 1x1 layout, draw timestamp without additional flip since we're already in flipped context
+    context.translate(x, y);
+    
+    context.font = `${timestampSize}px ${fontFamily}`;
+    context.fillStyle = timestampColor;
+    context.textAlign = align;
+    context.textBaseline = 'bottom';
+    context.lineWidth = 3;
+    context.strokeStyle = '#000';
+    context.lineJoin = 'round';
+    context.shadowColor = 'rgba(0,0,0,0.7)';
+    context.shadowBlur = 4;
+    context.shadowOffsetX = 2;
+    context.shadowOffsetY = 2;
 
-  context.font = `${timestampSize}px ${fontFamily}`;
-  context.fillStyle = timestampColor;
-  context.textAlign = align;
-  context.textBaseline = 'bottom';
-  context.lineWidth = 3;
-  context.strokeStyle = '#000';
-  context.lineJoin = 'round';
-  context.shadowColor = 'rgba(0,0,0,0.7)';
-  context.shadowBlur = 4;
-  context.shadowOffsetX = 2;
-  context.shadowOffsetY = 2;
+    context.fillText(text, posX, posY);
+  } else {
+    // For other layouts, use the original flip behavior
+    context.translate(x + width, y);
+    context.scale(-1, 1);
 
-  context.fillText(text, posX, posY);
+    context.font = `${timestampSize}px ${fontFamily}`;
+    context.fillStyle = timestampColor;
+    context.textAlign = align;
+    context.textBaseline = 'bottom';
+    context.lineWidth = 3;
+    context.strokeStyle = '#000';
+    context.lineJoin = 'round';
+    context.shadowColor = 'rgba(0,0,0,0.7)';
+    context.shadowBlur = 4;
+    context.shadowOffsetX = 2;
+    context.shadowOffsetY = 2;
+
+    context.fillText(text, posX, posY);
+  }
+
   context.restore();
 }
 
 function captureFrame(index) {
   const row = Math.floor(index / cols);
   const col = index % cols;
-  const x = col * frameW;
+  const x = leftside + col * frameW;
   const y = row * frameH;
 
   ctx.save();
-  // flip capture area horizontally to mirror selfie like video preview
+  
+  // Flip capture area horizontally to mirror selfie like video preview
   ctx.translate(x + frameW, y);
   ctx.scale(-1, 1);
 
-  // draw video scaled into frame
-  ctx.drawImage(video, 0, 0, frameW, frameH);
+  // Calculate aspect ratio and positioning to avoid stretching
+  const videoAspect = video.videoWidth / video.videoHeight;
+  const frameAspect = frameW / frameH;
+  
+  let drawWidth, drawHeight, offsetX, offsetY;
 
-  // draw overlay scaled correctly (overlay is same natural size as video)
-  ctx.drawImage(overlay, 0, 0, video.videoWidth, video.videoHeight, 0, 0, frameW, frameH);
+  if (frameAspect > videoAspect) {
+    // Frame is wider than video - fit to width
+    drawWidth = frameW;
+    drawHeight = frameW / videoAspect;
+    offsetX = 0;
+    offsetY = (frameH - drawHeight) / 2;
+  } else {
+    // Frame is taller than video - fit to height
+    drawHeight = frameH;
+    drawWidth = frameH * videoAspect;
+    offsetX = (frameW - drawWidth) / 2;
+    offsetY = 0;
+  }
 
-  // draw grain on this frame
-  drawGrainOnCanvas(ctx, 0, 0, frameW, frameH);
+  // Fill background to avoid transparent edges
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, frameW, frameH);
 
-  // draw timestamp for this frame
-  drawTimestamp(ctx, 0, 0, frameW, frameH);
+  // Draw video scaled properly into frame (maintain aspect ratio)
+  ctx.drawImage(video, offsetX, offsetY, drawWidth, drawHeight);
+
+  // Draw overlay scaled correctly
+  if (overlay.width > 0 && overlay.height > 0) {
+    // Calculate overlay scaling to match video positioning
+    const overlayScaleX = drawWidth / video.videoWidth;
+    const overlayScaleY = drawHeight / video.videoHeight;
+    const overlayOffsetX = offsetX / overlayScaleX;
+    const overlayOffsetY = offsetY / overlayScaleY;
+    
+    ctx.drawImage(
+      overlay, 
+      overlayOffsetX, 
+      overlayOffsetY, 
+      video.videoWidth, 
+      video.videoHeight,
+      offsetX, 
+      offsetY, 
+      drawWidth, 
+      drawHeight
+    );
+  }
+
+  // Draw grain on this frame
+  drawGrainOnCanvas(ctx, offsetX, offsetY, drawWidth, drawHeight);
+
+  // Draw timestamp for this frame
+  drawTimestamp(ctx, offsetX, offsetY, drawWidth, drawHeight);
 
   ctx.restore();
 
-  // redraw grid lines and theme on top (consistent with original)
+  // Redraw grid lines and theme on top
+  redrawGridLines();
+}
+
+// Hàm phụ trợ để vẽ lại grid lines
+function redrawGridLines() {
   ctx.strokeStyle = frameColor;
   ctx.lineWidth = 20;
-  for (let i = 1; i < cols; i++) {
-    ctx.beginPath();
-    ctx.moveTo(i * frameW, 0);
-    ctx.lineTo(i * frameW, canvas.height);
-    ctx.stroke();
+  
+  // Vertical lines
+  if (cols > 1) {
+    for (let i = 1; i < cols; i++) {
+      ctx.beginPath();
+      ctx.moveTo(leftside + i * frameW, 0);
+      ctx.lineTo(leftside + i * frameW, canvasHeight);
+      ctx.stroke();
+    }
   }
-  for (let i = 1; i < rows; i++) {
-    ctx.beginPath();
-    ctx.moveTo(0, i * frameH);
-    ctx.lineTo(canvas.width, i * frameH);
-    ctx.stroke();
+  
+  // Horizontal lines
+  if (rows > 1) {
+    for (let i = 1; i < rows; i++) {
+      ctx.beginPath();
+      ctx.moveTo(leftside, i * frameH);
+      ctx.lineTo(canvasWidth - rightside, i * frameH);
+      ctx.stroke();
+    }
   }
+  
   drawOuterFrameTo(ctx);
   drawThemeOverlayTo(ctx);
 }
-
 /* ===========================
    Capture flow (6 frames)
    =========================== */
@@ -832,7 +1051,13 @@ function startCapture() {
     statusText.textContent = `Ảnh ${count + 1}/${cols * rows} chụp sau ${timeLeft--}s`;
   }, 1000);
 }
+// Thêm reference
+const canvasLayoutSelect = document.getElementById('canvasLayout');
 
+// Thêm event listener (trong phần event listeners)
+canvasLayoutSelect.addEventListener('change', (e) => {
+  updateCanvasLayout(e.target.value);
+});
 /* ===========================
    Event listeners
    =========================== */
@@ -860,9 +1085,26 @@ frameColorPicker.addEventListener('input', (e) => {
 });
 
 // Theme change
-themeSelect.addEventListener('change', (e) => {
-  currentTheme = e.target.value;
-  drawGrid();
+themeSelected.addEventListener("click", (e) => {
+  e.stopPropagation();
+  themeSelect.classList.toggle("open");
+});
+
+themeOptions.forEach(opt => {
+  opt.addEventListener("click", (e) => {
+    const value = opt.dataset.value;
+    themeSelected.textContent = opt.textContent;
+    themeSelect.classList.remove("open");
+    currentTheme = value;
+    drawGrid();
+  });
+});
+// Thêm vào phần Event listeners, sau phần themeOptions
+
+
+// Đóng menu khi click ra ngoài
+document.addEventListener("click", () => {
+  themeSelect.classList.remove("open");
 });
 
 // Filter change
@@ -1360,34 +1602,34 @@ const lyricsText = document.getElementById('lyricsText');
 // Lời bài hát "Nơi này có anh" với thời gian hiển thị riêng cho mỗi câu (đơn vị: milliseconds)
 const noiNayCoAnhLyrics = [
   { text: "Em là ai bước đến nơi đây dịu dàng chân phương", duration: 5000 },
-  { text: "Em là ai tựa như ánh nắng ban mai ngọt ngào trong sương", duration: 4500 },
-  { text: "Ngắm em thật lâu", duration: 2000 },
-  { text: "Con tim anh yếu mềm", duration: 2000 },
-  { text: "Đắm say từ phút đó", duration: 2000 },
-  { text: "Từng giây trôi yêu thêm", duration: 3000 },
-  { text: "Bao ngày qua bình minh đánh thức xua tan bộn bề nơi anh", duration: 4500 },
-  { text: "Bao ngày qua niềm thương nỗi nhớ bay theo bầu trời trong xanh", duration: 4500 },
-  { text: "Liếc đôi hàng mi", duration: 2000 },
-  { text: "Mong manh anh thẫn thờ", duration: 2500 },
-  { text: "Muốn hôn nhẹ mái tóc", duration: 1750 },
-  { text: "Bờ môi em anh mơ", duration: 2500 },
-  { text: "Cầm tay anh dựa vai anh", duration: 2000 },
-  { text: "Kề bên anh nơi này có anh", duration: 2000 },
-  { text: "Gió mang câu tình ca", duration: 1400 },
-  { text: "Ngàn ánh sao vụt qua nhẹ ôm lấy em", duration: 3000 },
-  { text: "Cầm tay anh dựa vai anh", duration: 2000 },
-  { text: "Kề bên anh nơi này có anh", duration: 2000 },
-  { text: "Khép đôi mi thật lâu", duration: 1750 },
-  { text: "Nguyện mãi bên cạnh nhau yêu say đắm như ngày đầu", duration: 3200 },
-  { text: "Mùa xuân đến bình yên", duration: 2000 },
-  { text: "Cho anh những giấc mơ", duration: 2000 },
-  { text: "Hạ lưu giữ ngày mưa", duration: 2000 },
-  { text: "Ngọt ngào nên thơ", duration: 2000 },
-  { text: "Mùa thu lá vàng rơi", duration: 2000 },
-  { text: "Đông sang anh nhớ em", duration: 2000 },
-  { text: "Tình yêu bé nhỏ xin", duration: 2000 },
-  { text: "Dành tặng riêng em", duration: 2000 },  
-  { text: "𝅘𝅥𝅯 𝅘𝅥 𝅘𝅥𝅮 𝅘𝅥𝅯 𝅘𝅥 𝅘𝅥𝅮", duration: 6 }, 
+  { text: "Em là ai tựa như ánh nắng ban mai ngọt ngào trong sương", duration: 5000 },
+  { text: "Ngắm em thật lâu", duration: 2500 },
+  { text: "Con tim anh yếu mềm", duration: 2500 },
+  { text: "Đắm say từ phút đó", duration: 2500 },
+  { text: "Từng giây trôi yêu thêm", duration: 3500 },
+  { text: "Bao ngày qua bình minh đánh thức xua tan bộn bề nơi anh", duration: 5000 },
+  { text: "Bao ngày qua niềm thương nỗi nhớ bay theo bầu trời trong xanh", duration: 5000 },
+  { text: "Liếc đôi hàng mi", duration: 3000 },
+  { text: "Mong manh anh thẫn thờ", duration: 2900 },
+  { text: "Muốn hôn nhẹ mái tóc", duration: 2000 },
+  { text: "Bờ môi em anh mơ", duration: 2800 },
+  { text: "Cầm tay anh dựa vai anh", duration: 2400 },
+  { text: "Kề bên anh nơi này có anh", duration: 2400 },
+  { text: "Gió mang câu tình ca", duration: 1900 },
+  { text: "Ngàn ánh sao vụt qua nhẹ ôm lấy em", duration: 3500 },
+  { text: "Cầm tay anh dựa vai anh", duration: 2400 },
+  { text: "Kề bên anh nơi này có anh", duration: 2400 },
+  { text: "Khép đôi mi thật lâu", duration: 2000 },
+  { text: "Nguyện mãi bên cạnh nhau yêu say đắm như ngày đầu", duration: 4000 },
+  { text: "Mùa xuân đến bình yên", duration: 2750 },
+  { text: "Cho anh những giấc mơ", duration: 2600 },
+  { text: "Hạ lưu giữ ngày mưa", duration: 2700 },
+  { text: "Ngọt ngào nên thơ", duration: 2500 },
+  { text: "Mùa thu lá vàng rơi", duration: 2700 },
+  { text: "Đông sang anh nhớ em", duration: 2500 },
+  { text: "Tình yêu bé nhỏ xin", duration: 2500 },
+  { text: "Dành tặng riêng em", duration: 3000 },  
+  { text: "𝅘𝅥𝅯 𝅘𝅥 𝅘𝅥𝅮 𝅘𝅥𝅯 𝅘𝅥 𝅘𝅥𝅮", duration: 6000 }, 
 ];
 
 /* Music event listeners */
@@ -1499,4 +1741,8 @@ function displayNextLyric() {
 // Khởi tạo khi trang load
 document.addEventListener('DOMContentLoaded', function() {
   updateMusicEffects();
+});
+document.addEventListener('DOMContentLoaded', function() {
+  updateCanvasLayout('3x2'); // hoặc layout mặc định bạn muốn
+  // ... các khởi tạo khác
 });

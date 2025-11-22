@@ -90,7 +90,8 @@ header {
 .header-left {
   display: flex;
   align-items: center;
-  gap: 2rem;
+  gap: 8rem;
+  margin-right: 5rem;
 }
 
 .header-right {
@@ -242,6 +243,12 @@ header {
 .music-parent:hover .music-submenu {
   display: block;
 }
+
+.background_icon {
+  width: 3rem;
+  height: 3rem;
+  transition: transform 0.3s ease;
+}
 /* ================================
    MAIN LAYOUT
 ================================ */
@@ -301,16 +308,27 @@ main {
   opacity: 1;
 }
 
+/* ================================
+   VIDEO CONTAINER ASPECT RATIOS
+================================ */
 .video-container {
   margin-top: 5rem;
   width: 100%;
   max-width: 480px;
-  height: 360px;
+  height: auto; /* Thay đổi từ height cố định */
+  aspect-ratio: 4 / 3; /* Tỷ lệ mặc định */
   background: #222;
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 1.5rem;
   position: relative;
+  transition: all 0.3s ease; /* Thêm hiệu ứng chuyển tiếp mượt mà */
+}
+
+/* Tỷ lệ 1:1 cho video container */
+.video-container.aspect-1-1 {
+  aspect-ratio: 1 / 1;
+  max-width: 480px;
 }
 
 #video,
@@ -345,7 +363,7 @@ main {
 
 .canvas-container {
   width: 100%;
-  max-width: 480px;
+  max-width: 480px; /* Giữ nguyên hoặc điều chỉnh theo nhu cầu */
   background: #eee;
   border-radius: 8px;
   display: flex;
@@ -551,31 +569,60 @@ main {
 .select-menu li:hover {
   background:#f4f4f4;
 }
-.dst-parent {
-  position:relative;
-  cursor:pointer;
+/* ================================
+   FILTER & THEME SUBMENU FIXES
+================================ */
+.dst-parent, .theme-parent {
+  position: relative;
+  cursor: pointer;
 }
-.dst-submenu { position:absolute;
-  bottom:0%;
-  left:100%;
-  display:none;
-  background:#fff;
-  border:1px solid var(--border);
-  border-radius:8px;
-  padding:.4rem 0;
-  width:150px;
-  z-index:10;
-  list-style:none;
+
+/* Đảm bảo submenu hiển thị khi hover */
+.dst-parent:hover .dst-submenu,
+.theme-parent:hover .theme-submenu {
+  display: block !important;
+}
+
+/* Sửa vị trí submenu để không bị che khuất */
+.dst-submenu, .theme-submenu {
+  position: absolute;
+  bottom: 0;
+  left: 100%;
+  display: none;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: .4rem 0;
+  width: 200px; /* Tăng width để đủ chỗ cho text */
+  z-index: 1000; /* Tăng z-index để hiển thị trên các element khác */
+  list-style: none;
   max-height: 20rem;
-  overflow-y: auto; /* Thêm scroll khi vượt quá */
+  overflow-y: auto;
   overflow-x: hidden;
+  box-shadow: var(--shadow);
 }
-.dst-submenu li {
-  padding:.6rem .8rem;
-  white-space:nowrap;
-  cursor:pointer;}
-.dst-parent:hover .dst-submenu {
-  display:block;
+
+/* Style cho các item trong submenu */
+.dst-submenu li, .theme-submenu li {
+  padding: .6rem .8rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 0.9rem;
+}
+
+.dst-submenu li:hover, .theme-submenu li:hover {
+  background: #f4f4f4;
+}
+
+/* Đảm bảo menu chính có đủ không gian cho submenu */
+.custom-select {
+  position: relative;
+  min-height: 40px; /* Đảm bảo có đủ chiều cao để hover */
+}
+
+.custom-select .select-menu {
+  z-index: 1001; /* Cao hơn submenu */
 }
 /* ================================
    WEATHER EFFECTS ANIMATIONS
@@ -710,3 +757,6 @@ main {
 .weather-submenu {
     display: none;
 }
+/* Thêm vào cuối file style.css */
+
+/* Theme submenu styles */
