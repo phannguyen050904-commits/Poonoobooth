@@ -130,27 +130,21 @@ const videoContainer = document.querySelector('.video-container');
 
 // Thêm hàm cập nhật tỷ lệ video
 // Thêm hàm cập nhật tỷ lệ video
+// Thay thế hàm updateVideoAspectRatio hiện tại bằng hàm này
 function updateVideoAspectRatio(layout) {
   if (!videoContainer) return;
   
-  switch(layout) {
-    case '1x1':
-      videoContainer.style.aspectRatio = '1 / 1';
-      videoContainer.style.maxWidth = '480px'; // Kích thước 480px
-      videoContainer.classList.add('aspect-1-1');
-      break;
-    case '3x2':
-    case '4x1':
-    case '2x2':
-    case '2x1':
-    default:
-      videoContainer.style.aspectRatio = '4 / 3';
-      videoContainer.style.maxWidth = '480px';
-      videoContainer.classList.remove('aspect-1-1');
-      break;
+  // Chỉ layout 1x1 sử dụng tỷ lệ 1:1, các layout khác đều dùng 4:3
+  if (layout === '1x1') {
+    videoContainer.style.aspectRatio = '1 / 1';
+    videoContainer.style.maxWidth = '480px';
+    videoContainer.classList.add('aspect-1-1');
+  } else {
+    videoContainer.style.aspectRatio = '4 / 3';
+    videoContainer.style.maxWidth = '480px';
+    videoContainer.classList.remove('aspect-1-1');
   }
 }
-
 function updateCanvasLayout(layout) {
   if (!canvasLayouts[layout]) return;
   
@@ -911,20 +905,20 @@ function captureFrame(index) {
   ctx.translate(x + frameW, y);
   ctx.scale(-1, 1);
 
-  // Calculate aspect ratio and positioning to avoid stretching
+  // Calculate aspect ratio and positioning - FIX FOR MOBILE 16:9
   const videoAspect = video.videoWidth / video.videoHeight;
   const frameAspect = frameW / frameH;
   
   let drawWidth, drawHeight, offsetX, offsetY;
 
   if (frameAspect > videoAspect) {
-    // Frame is wider than video - fit to width
+    // Frame is wider than video - fit to width (mobile 16:9 case)
     drawWidth = frameW;
     drawHeight = frameW / videoAspect;
     offsetX = 0;
     offsetY = (frameH - drawHeight) / 2;
   } else {
-    // Frame is taller than video - fit to height
+    // Frame is taller than video - fit to height (webcam 4:3 case)
     drawHeight = frameH;
     drawWidth = frameH * videoAspect;
     offsetX = (frameW - drawWidth) / 2;
@@ -938,25 +932,17 @@ function captureFrame(index) {
   // Draw video scaled properly into frame (maintain aspect ratio)
   ctx.drawImage(video, offsetX, offsetY, drawWidth, drawHeight);
 
-  // Draw overlay scaled correctly
+  // Draw overlay scaled correctly - FIX FOR MOBILE
   if (overlay.width > 0 && overlay.height > 0) {
-    // Calculate overlay scaling to match video positioning
-    const overlayScaleX = drawWidth / video.videoWidth;
-    const overlayScaleY = drawHeight / video.videoHeight;
-    const overlayOffsetX = offsetX / overlayScaleX;
-    const overlayOffsetY = offsetY / overlayScaleY;
+    // Calculate the actual video content area in the frame
+    const videoContentWidth = drawWidth;
+    const videoContentHeight = drawHeight;
     
+    // Draw overlay matching the video content area
     ctx.drawImage(
       overlay, 
-      overlayOffsetX, 
-      overlayOffsetY, 
-      video.videoWidth, 
-      video.videoHeight,
-      offsetX, 
-      offsetY, 
-      drawWidth, 
-      drawHeight
-
+      0, 0, overlay.width, overlay.height, // source
+      offsetX, offsetY, videoContentWidth, videoContentHeight // destination
     );
   }
 
@@ -969,7 +955,6 @@ function captureFrame(index) {
   ctx.restore();
 
   // Redraw grid lines and theme on top
-  redrawGridLines();
   if (showGrid) {
     redrawGridLines();
   } else {
@@ -977,7 +962,6 @@ function captureFrame(index) {
     drawThemeOverlayTo(ctx);
   }
 }
-
 
 // Hàm phụ trợ để vẽ lại grid lines
 function redrawGridLines() {
