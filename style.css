@@ -688,8 +688,9 @@ main {
   header { padding: 1rem 0;}
   .header-content { padding: 0 1rem; }
   .logo { font-size: 1.5rem; }
+  .music_icon { width: 2rem; height: 2rem; }
   .instagram_icon { width: 2rem; height: 2rem; }
-  .header-left { gap: 4rem; margin-right: 0.5rem;}
+  .header-left { gap: 1rem; margin-right: 0.5rem;}
   .header-right { gap: 1rem; }
 
   main { padding: 1rem; }
