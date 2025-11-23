@@ -254,7 +254,7 @@ main {
 
 
 .camera-section {
-  position: relative; /* Thêm dòng này */
+  position: relative; 
 
   background: var(--white);
   box-shadow: var(--shadow);
@@ -266,10 +266,10 @@ main {
 }
 
 .lyrics-container {
-  position: absolute; /* Giữ nguyên absolute */
-  top: 1rem; /* Cách trên cùng của camera-section */
+  position: absolute; 
+  top: 1rem; 
   max-width: 480px;
-  margin: 0 auto 1rem auto; /* Căn giữa và tạo khoảng cách dưới */
+  margin: 0 auto 1rem auto; 
   text-align: center;
   z-index: 10;
 }
@@ -685,11 +685,11 @@ main {
 
 /* mobile================================================================== */
 @media (max-width: 768px) {
-  header { padding: 1rem 0; }
+  header { padding: 1rem 0;}
   .header-content { padding: 0 1rem; }
   .logo { font-size: 1.5rem; }
   .instagram_icon { width: 2rem; height: 2rem; }
-  .header-left { gap: 4rem; margin-right: 2rem; }
+  .header-left { gap: 4rem; margin-right: 0.5rem;}
   .header-right { gap: 1rem; }
 
   main { padding: 1rem; }
