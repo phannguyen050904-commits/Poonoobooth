@@ -1,16 +1,4 @@
-/* app.js — cleaned & modular version
-   Preserves original behavior:
-   - Camera preview + overlay (filters drawn via face-api)
-   - Grain overlay (video textures)
-   - Preload fonts, themes, filters, grains
-   - Capture 6 frames into a 3x2 canvas photo strip with timestamp
-   - Controls: frame color, theme, filter, grain, grain opacity, timestamp options, countdown
-   - NEW: Dialogue controls with face tracking
-*/
 
-/* ===========================
-   Element references
-   =========================== */
 const video = document.getElementById('video');
 const overlay = document.getElementById('overlay');
 const overlayCtx = overlay.getContext('2d');
@@ -23,10 +11,14 @@ const statusText = document.getElementById('status');
 
 const frameColorPicker = document.getElementById('frameColor');
 const countdownInput = document.getElementById('countdownTime');
+
+//grains=========================================================
 const grainSelect = document.getElementById('grainSelect');
 const grainOpacitySlider = document.getElementById('grainOpacity');
 const grainOpacityValue = document.getElementById('grainOpacityValue');
 
+
+// Timestamp========================================================
 const timestampControls = document.getElementById('timestampControls');
 const timestampToggle = document.getElementById('timestampToggle');
 const timestampFormatSel = document.getElementById('timestampFormat');
@@ -34,14 +26,18 @@ const timestampFontSel = document.getElementById('timestampFont');
 const timestampSizeInput = document.getElementById('timestampSize');
 const timestampColorInput = document.getElementById('timestampColor') || null;
 const timestampPositionSel = document.getElementById('timestampPosition');
+
+
 const customFormatInput = document.getElementById('customFormat');
 const customFormatGroup = document.getElementById('customFormatGroup');
+
+// Filter & Theme========================================================
 const filterSelect = document.getElementById('filterSelect');
 const filterSelected = filterSelect.querySelector('.selected');
 const filterOptions = filterSelect.querySelectorAll('.select-menu > li:not(.dst-parent)');
 const dstOptions = filterSelect.querySelectorAll('.dst-submenu li');
 
-// Dialogue controls
+// Dialogue========================================================
 const dialogueToggle = document.getElementById('dialogueToggle');
 const dialogueControls = document.getElementById('dialogueControls');
 const dialogueSelect = document.getElementById('dialogueSelect');
@@ -56,32 +52,31 @@ const themeSelected = themeSelect.querySelector('.selected');
 const themeOptions = themeSelect.querySelectorAll('.select-menu > li:not(.theme-parent)');
 const themeSubOptions = themeSelect.querySelectorAll('.theme-submenu li');
 
+//grid==============================================================
+const gridToggle = document.getElementById('gridToggle');
+
 //App state=================================================//
 let frameColor = '#4f6d8f';
 let currentTheme = 'none';
 let selectedFilter = 'none';
 let filterActive = false;
 
-let themeImages = {};   // { name: Image }
-let filterImages = {};  // { name: { image, offsetX, offsetY, scale } }
-let dialogueImages = {}; // { name: Image }
+let themeImages = {};   
+let filterImages = {};
+let dialogueImages = {}; 
 
-let grainVideos = {};   // { name: HTMLVideoElement }
+let grainVideos = {};  
 let currentGrain = 'none';
 let grainOpacity = 0.25;
 
 let detectionInProgress = false;
 let animationFrameId = null;
 let faceModelsLoaded = false;
-/* App state */
-let showGrid = true; // Thêm dòng này
-// Thêm reference mới
-const gridToggle = document.getElementById('gridToggle');
-// ... các state khác giữ nguyên
 
-/* Canvas grid layout (3 rows x 2 cols) */
+let showGrid = true; 
 
-/* Timestamp state */
+
+/* Timestamp state=====================================================*/
 let showTimestamp = false;
 let timestampFormat = 'dd/mm/yyyy';
 let timestampFont = 'FontTime';
@@ -90,12 +85,7 @@ let timestampColor = '#ffffff';
 let timestampPosition = 'bottom-right';
 let customTimestampFormat = '';
 
-let isDraggingTimestamp = false;
-let timestampDragOffset = { x: 0, y: 0 };
-let customTimestampPosition = { x: 50, y: 50 }; // Vị trí mặc định
-
-/* Dialogue state */
-/* Dialogue state */
+/* Dialogue state=====================================================*/
 let showDialogue = false;
 let selectedDialogue = 'none';
 let dialogueText = '';
@@ -113,8 +103,9 @@ let cols = 2;
 let frameW, frameH, bottomPadding;
 let leftside = 0;
 let rightside = 0;
-// Layout configurations==============================================
-//
+
+
+// frames====================================================================
 const $ = id => document.getElementById(id);
 
 function safeLog(...args) { console.log(...args); }
@@ -128,13 +119,10 @@ const canvasLayouts = {
 };
 const videoContainer = document.querySelector('.video-container');
 
-// Thêm hàm cập nhật tỷ lệ video
-// Thêm hàm cập nhật tỷ lệ video
-// Thay thế hàm updateVideoAspectRatio hiện tại bằng hàm này
+// cập nhật frames====================================================
 function updateVideoAspectRatio(layout) {
   if (!videoContainer) return;
   
-  // Chỉ layout 1x1 sử dụng tỷ lệ 1:1, các layout khác đều dùng 4:3
   if (layout === '1x1') {
     videoContainer.style.aspectRatio = '1 / 1';
     videoContainer.style.maxWidth = '480px';
@@ -157,30 +145,22 @@ function updateCanvasLayout(layout) {
   cols = config.cols;
   bottomPadding = config.bottomPadding;
   
-  // THÊM DÒNG NÀY - khởi tạo leftside và rightside
   leftside = config.leftside || 0;
   rightside = config.rightside || 0;
 
-  // Update canvas dimensions
   canvas.width = canvasWidth;
   canvas.height = canvasHeight;
   
-  // Recalculate frame dimensions với leftside và rightside
   frameW = (canvasWidth - leftside - rightside) / cols;
   frameH = (canvasHeight - bottomPadding) / rows;
   
-  // Cập nhật tỷ lệ video preview
   updateVideoAspectRatio(layout);
-  
-  // Redraw grid
   drawGrid();
 }
 
-
+//Vẽ viền=====================================================
 function drawGrid() {
-  
-  // base background
-  ctx.fillStyle = '#eee';
+    ctx.fillStyle = '#eee';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // main strokes - CHỈ VẼ NẾU SHOWGRID = TRUE
@@ -244,34 +224,36 @@ function drawOuterFrameTo(ctxRef) {
     
     switch(currentCanvasLayout) {
       case '4x1':
-        shortBottomWidth = canvasWidth * 1; // Ngắn bằng 60% chiều rộng
+        shortBottomWidth = canvasWidth * 1; 
         break;
       case '3x2':
-        shortBottomWidth = canvasWidth * 1; // Ngắn bằng 80% chiều rộng
+        shortBottomWidth = canvasWidth * 1; 
         break;
       case '2x2':
-        shortBottomWidth = canvasWidth * 1; // Ngắn bằng 70% chiều rộng
+        shortBottomWidth = canvasWidth * 1; 
         break;
       case '1x1':
-        shortBottomWidth = canvasWidth * 1; // Ngắn bằng 50% chiều rộng
+        shortBottomWidth = canvasWidth * 1; 
         break;
       default:
-        shortBottomWidth = canvasWidth; // Mặc định full width
+        shortBottomWidth = canvasWidth; 
     }
     
-    const startX = (canvasWidth - shortBottomWidth) / 2; // Căn giữa
+    const startX = (canvasWidth - shortBottomWidth) / 2;
     ctxRef.moveTo(startX, canvasHeight - bottomLineWidth / 2);
     ctxRef.lineTo(startX + shortBottomWidth, canvasHeight - bottomLineWidth / 2);
     ctxRef.stroke();
   }
 
-  // Top thin line
   ctxRef.lineWidth = topLineWidth;
   ctxRef.beginPath();
   ctxRef.moveTo(0, topLineWidth / 2);
   ctxRef.lineTo(canvasWidth, topLineWidth / 2);
   ctxRef.stroke();
 }
+
+
+
 //camera setup==========================================================================//
 async function startCamera() {
   try {
@@ -283,7 +265,7 @@ async function startCamera() {
 }
 startCamera();
 
-//Preloaders: themes, filters, grains, fonts, dialogues=======================================//
+//Preload: themes, filters, grains, fonts, dialogues=======================================//
 function preloadThemes() {
   const themes = ['Đi làm', 'Danisa','Dont starve together 1', 'MCK','GAMTIME'];
   themes.forEach(name => {
@@ -384,7 +366,7 @@ function preloadGrains() {
     v.preload = 'auto';
     v.addEventListener('loadeddata', () => {
       safeLog(`Grain loaded: ${g.name}`);
-      v.play().catch(() => {}); // autoplay may be blocked until user interacts
+      v.play().catch(() => {});
     });
     grainVideos[g.name] = v;
   });
@@ -442,14 +424,12 @@ async function loadFaceModels() {
       return true;
     } catch (cdnErr) {
       safeErr('Failed to load face models:', cdnErr);
-      statusText.textContent = '❌ Lỗi tải mô hình nhận diện';
       return false;
     }
   }
 }
 
 //Drawing helpers: grid, frame, theme==============================================//
-
 
 function drawThemeOverlayTo(ctxRef) {
   if (currentTheme !== 'none' && themeImages[currentTheme]) {
@@ -461,9 +441,7 @@ function drawThemeOverlayTo(ctxRef) {
 }
 
 
-/* ===========================
-   Grain overlay (video) helpers
-   =========================== */
+//grains==========================================================================
 function drawGrainOverlay() {
   if (currentGrain !== 'none' && grainVideos[currentGrain]) {
     const v = grainVideos[currentGrain];
@@ -473,7 +451,6 @@ function drawGrainOverlay() {
       overlayCtx.globalAlpha = 1.0;
     }
   } else {
-    // ensure overlay cleared if none selected
     overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
   }
 }
@@ -489,9 +466,7 @@ function drawGrainOnCanvas(context, x, y, width, height) {
   }
 }
 
-/* ===========================
-   Dialogue rendering functions
-   =========================== */
+//DIAOLUE====================================================================================
 function drawDialogueOnFace(detection) {
   if (!showDialogue || selectedDialogue === 'none' || !dialogueText.trim()) return;
 
@@ -501,22 +476,18 @@ function drawDialogueOnFace(detection) {
   const landmarks = detection.landmarks;
   const nose = landmarks.getNose();
   
-  // Calculate base size (không nhân với dialogueScale ở đây)
   const faceWidth = Math.abs(landmarks.getRightEye()[3].x - landmarks.getLeftEye()[0].x);
   const baseDialogueWidth = faceWidth * 1.5;
   const originalAspectRatio = currentDialogue.naturalWidth / currentDialogue.naturalHeight;
   const baseDialogueHeight = baseDialogueWidth / originalAspectRatio;
 
-  // Apply scale
   const dialogueWidth = baseDialogueWidth * dialogueScale;
   const dialogueHeight = baseDialogueHeight * dialogueScale;
 
   let centerX, centerY;
 
-  // Tính toán vị trí dựa trên kích thước gốc (không scale)
-  // Điều này giữ cho vị trí tương đối so với mặt ổn định
-  const baseOffsetX = baseDialogueWidth * 0.3; // offset mặc định
-  const baseOffsetY = baseDialogueHeight * 0.3; // offset mặc định
+  const baseOffsetX = baseDialogueWidth * 0.3; 
+  const baseOffsetY = baseDialogueHeight * 0.3; 
 
   switch (dialoguePosition) {
     case 'top-left':
@@ -527,36 +498,19 @@ function drawDialogueOnFace(detection) {
       centerX = nose[0].x - baseOffsetX * 4;
       centerY = nose[0].y - baseOffsetY * 3;
       break;
-    case 'bottom-left':
-      centerX = nose[0].x - baseOffsetX * 0.8;
-      centerY = nose[0].y + baseOffsetY * 0.5;
-      break;
-    case 'bottom-right':
-      centerX = nose[0].x + baseOffsetX * 0.3;
-      centerY = nose[0].y + baseOffsetY * 0.5;
-      break;
-    case 'top-center':
-      centerX = nose[0].x;
-      centerY = nose[0].y - baseOffsetY * 1.5;
-      break;
-    case 'bottom-center':
-      centerX = nose[0].x;
-      centerY = nose[0].y + baseOffsetY * 0.5;
-      break;
     default:
       centerX = nose[0].x + baseOffsetX * 3;
       centerY = nose[0].y - baseOffsetY * 1.5;
   }
 
-  // Draw dialogue bubble - vẽ từ center point với kích thước đã scale
+  //vẽ ô thoại=======================================================
   overlayCtx.drawImage(
     currentDialogue,
-    centerX - dialogueWidth / 2,  // Vẽ từ center point
-    centerY - dialogueHeight / 2, // Vẽ từ center point
+    centerX - dialogueWidth / 2,
+    centerY - dialogueHeight / 2,
     dialogueWidth,
     dialogueHeight
   );
-  // Draw dialogue bubble
   overlayCtx.drawImage(
     currentDialogue,
     centerX - dialogueWidth / 2,
@@ -565,10 +519,10 @@ function drawDialogueOnFace(detection) {
     dialogueHeight
   );
 
-  // Draw text on dialogue bubble
+  //Vẽ lời thoại===================================================
   overlayCtx.save();
   overlayCtx.translate(overlay.width, 0);
-  overlayCtx.scale(-1, 1); // Flip for mirror effect
+  overlayCtx.scale(-1, 1);
 
   const flippedCenterX = overlay.width - centerX;
   
@@ -577,7 +531,6 @@ function drawDialogueOnFace(detection) {
   overlayCtx.textAlign = 'center';
   overlayCtx.textBaseline = 'middle';
   
-  // Word wrap for dialogue text
   const maxWidth = dialogueWidth * 0.8;
   const words = dialogueText.split(' ');
   const lines = [];
@@ -595,7 +548,6 @@ function drawDialogueOnFace(detection) {
   }
   lines.push(currentLine);
 
-  // Draw text lines
   const lineHeight = dialogueSize * 1.2;
   const startY = centerY - (lines.length - 1) * lineHeight / 2;
   
@@ -610,26 +562,137 @@ function drawDialogueOnFace(detection) {
   overlayCtx.restore();
 }
 
-/* ===========================
-   Timestamp on video preview (flipped)
-   =========================== */
+
+
+//Vẽ lên camera===============================================================================
+async function detectFacesLive() {
+  if (selectedFilter === 'none' && (!showDialogue || selectedDialogue === 'none' || !dialogueText.trim())) {
+    overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+    drawGrainOverlay();
+    drawTimestampOnVideo();
+    animationFrameId = requestAnimationFrame(detectFacesLive);
+    return;
+  }
+
+  if (detectionInProgress) {
+    animationFrameId = requestAnimationFrame(detectFacesLive);
+    return;
+  }
+
+  detectionInProgress = true;
+
+  if (overlay.width !== video.videoWidth || overlay.height !== video.videoHeight) {
+    overlay.width = video.videoWidth;
+    overlay.height = video.videoHeight;
+  }
+
+  try {
+    const detections = await faceapi
+      .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+      .withFaceLandmarks();
+
+    overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+
+    drawGrainOverlay();
+
+    if (detections && detections.length > 0) {
+      if (selectedFilter !== 'none') {
+        const currentFilter = filterImages[selectedFilter];
+        if (currentFilter && currentFilter.image.complete) {
+          detections.forEach(d => {
+            const landmarks = d.landmarks;
+            const leftEye = landmarks.getLeftEye();
+            const rightEye = landmarks.getRightEye();
+            const nose = landmarks.getNose();
+
+            const baseFaceWidth = Math.abs(rightEye[3].x - leftEye[0].x);
+            const faceWidth = baseFaceWidth * (currentFilter.scale || 1.0);
+            const img = currentFilter.image;
+            const originalAspectRatio = img.naturalWidth / img.naturalHeight;
+            const faceHeight = faceWidth / originalAspectRatio;
+
+            const centerX = (leftEye[3].x + rightEye[0].x) / 2 - faceWidth * (currentFilter.offsetX || 0);
+            const centerY = nose[0].y - faceHeight * (currentFilter.offsetY || 0);
+
+            overlayCtx.drawImage(
+              currentFilter.image,
+              centerX - faceWidth / 2,
+              centerY - faceHeight / 2,
+              faceWidth,
+              faceHeight
+            );
+          });
+        }
+      }
+
+      if (showDialogue && selectedDialogue !== 'none' && dialogueText.trim()) {
+        detections.forEach(d => {
+          drawDialogueOnFace(d);
+        });
+      }
+    }
+
+    drawTimestampOnVideo();
+
+  } catch (err) {
+    safeErr('Face detection error:', err);
+  }
+
+  detectionInProgress = false;
+  animationFrameId = requestAnimationFrame(detectFacesLive);
+}
+
+async function initializeFilter() {
+  if (!filterActive) {
+    const ok = await loadFaceModels();
+    if (!ok) return;
+    filterActive = true;
+  }
+
+  overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+  detectFacesLive();
+}
+
+//TIMESTAMP======================================================================================
+
+
+function formatTimestamp(date) {
+  const DD = String(date.getDate()).padStart(2, '0');
+  const MM = String(date.getMonth() + 1).padStart(2, '0');
+  const YYYY = date.getFullYear();
+  const HH = String(date.getHours()).padStart(2, '0');
+  const mm = String(date.getMinutes()).padStart(2, '0');
+  const ss = String(date.getSeconds()).padStart(2, '0');
+
+  switch (timestampFormat) {
+    case 'dd/mm/yyyy': return `${DD}/${MM}/${YYYY}`;
+    case 'mm/dd/yyyy': return `${MM}/${DD}/${YYYY}`;
+    case 'yyyy-mm-dd': return `${YYYY}-${MM}-${DD}`;
+    case 'full': return `${DD}/${MM}/${YYYY} ${HH}:${mm}:${ss}`;
+    case 'custom':
+      if (!customTimestampFormat) return `${DD}/${MM}/${YYYY}`;
+      return customTimestampFormat
+        .replace('DD', DD).replace('MM', MM).replace('YYYY', YYYY)
+        .replace('HH', HH).replace('mm', mm).replace('ss', ss);
+    default: return `${DD}/${MM}/${YYYY}`;
+  }
+}
+
+
 function drawTimestampOnVideo() {
   if (!showTimestamp) return;
 
   const now = new Date();
   const text = formatTimestamp(now);
-  
-  // Font family check
   const fontFamily = document.fonts && document.fonts.check && document.fonts.check(`12px ${timestampFont}`) ? timestampFont : 'monospace';
 
-  // Compute position for video (account for horizontal flip)
     if (currentCanvasLayout === '1x1') {
     sidepadding = 100;
-    bottomPadding = 50 // Padding nhỏ hơn cho layout 1x1
-    fontSize = timestampSize * 0.5; // Font size nhỏ hơn một chút
+    bottomPadding = 50
+    fontSize = timestampSize * 0.5;
   } else {
     sidepadding = 25;
-    bottomPadding = 25 // Padding mặc định cho các layout khác
+    bottomPadding = 25
     fontSize = timestampSize;
   }
   let posX, posY, align;
@@ -655,23 +718,16 @@ function drawTimestampOnVideo() {
       posY = overlay.height - fontSize;; 
       align = 'left';
       break;
-    case 'bottom-center':
-      posX = overlay.width / 2; 
-      posY = overlay.height - bottomPaddingpadding; 
-      align = 'center';
-      break;
     default:
       posX = sidepadding; 
       posY = overlay.height - bottomPadding; 
       align = 'left';
   }
 
-  // Save context và áp dụng flip horizontal
   overlayCtx.save();
   overlayCtx.translate(overlay.width, 0);
   overlayCtx.scale(-1, 1);
 
-  // Draw timestamp on overlay (đã được flip)
   overlayCtx.font = `${timestampSize}px ${fontFamily}`;
   overlayCtx.fillStyle = timestampColor;
   overlayCtx.textAlign = align;
@@ -686,137 +742,7 @@ function drawTimestampOnVideo() {
 
   overlayCtx.fillText(text, posX, posY);
   
-  // Restore context
   overlayCtx.restore();
-}
-
-/* ===========================
-   Updated face detection & filter rendering loop with dialogue
-   =========================== */
-/* ===========================
-   Updated face detection & filter rendering loop with dialogue
-   =========================== */
-async function detectFacesLive() {
-  // If no filter chosen and no dialogue, just draw grain (if any) and timestamp, then loop
-  if (selectedFilter === 'none' && (!showDialogue || selectedDialogue === 'none' || !dialogueText.trim())) {
-    overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
-    drawGrainOverlay();
-    drawTimestampOnVideo();
-    animationFrameId = requestAnimationFrame(detectFacesLive);
-    return;
-  }
-
-  if (detectionInProgress) {
-    animationFrameId = requestAnimationFrame(detectFacesLive);
-    return;
-  }
-
-  detectionInProgress = true;
-
-  // keep overlay same size as video
-  if (overlay.width !== video.videoWidth || overlay.height !== video.videoHeight) {
-    overlay.width = video.videoWidth;
-    overlay.height = video.videoHeight;
-  }
-
-  try {
-    const detections = await faceapi
-      .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
-      .withFaceLandmarks();
-
-    overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
-
-    // draw grain first
-    drawGrainOverlay();
-
-    if (detections && detections.length > 0) {
-      // Draw filters
-      if (selectedFilter !== 'none') {
-        const currentFilter = filterImages[selectedFilter];
-        if (currentFilter && currentFilter.image.complete) {
-          detections.forEach(d => {
-            const landmarks = d.landmarks;
-            const leftEye = landmarks.getLeftEye();
-            const rightEye = landmarks.getRightEye();
-            const nose = landmarks.getNose();
-
-            // base face width estimation using eyes
-            const baseFaceWidth = Math.abs(rightEye[3].x - leftEye[0].x);
-            const faceWidth = baseFaceWidth * (currentFilter.scale || 1.0);
-            // Tự động giữ tỷ lệ ảnh gốc
-            const img = currentFilter.image;
-            const originalAspectRatio = img.naturalWidth / img.naturalHeight;
-            const faceHeight = faceWidth / originalAspectRatio;
-
-            const centerX = (leftEye[3].x + rightEye[0].x) / 2 - faceWidth * (currentFilter.offsetX || 0);
-            const centerY = nose[0].y - faceHeight * (currentFilter.offsetY || 0);
-
-            overlayCtx.drawImage(
-              currentFilter.image,
-              centerX - faceWidth / 2,
-              centerY - faceHeight / 2,
-              faceWidth,
-              faceHeight
-            );
-          });
-        }
-      }
-
-      // Draw dialogues - CHỈ CẦN CÓ FACE DETECTION LÀ VẼ ĐƯỢC DIALOGUE
-      if (showDialogue && selectedDialogue !== 'none' && dialogueText.trim()) {
-        detections.forEach(d => {
-          drawDialogueOnFace(d);
-        });
-      }
-    }
-
-    // Draw timestamp on video preview (after filters and dialogues)
-    drawTimestampOnVideo();
-
-  } catch (err) {
-    safeErr('Face detection error:', err);
-  }
-
-  detectionInProgress = false;
-  animationFrameId = requestAnimationFrame(detectFacesLive);
-}
-
-/* Initialize filter (loads models once and starts detection loop) */
-async function initializeFilter() {
-  if (!filterActive) {
-    const ok = await loadFaceModels();
-    if (!ok) return;
-    filterActive = true;
-  }
-
-  // reset overlay then start loop
-  overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
-  detectFacesLive();
-}
-
-/* ===========================
-   Capture logic (3x2 photo strip)
-   =========================== */
-function formatTimestamp(date) {
-  const DD = String(date.getDate()).padStart(2, '0');
-  const MM = String(date.getMonth() + 1).padStart(2, '0');
-  const YYYY = date.getFullYear();
-  const HH = String(date.getHours()).padStart(2, '0');
-  const mm = String(date.getMinutes()).padStart(2, '0');
-  const ss = String(date.getSeconds()).padStart(2, '0');
-
-  switch (timestampFormat) {
-    case 'dd/mm/yyyy': return `${DD}/${MM}/${YYYY}`;
-    case 'mm/dd/yyyy': return `${MM}/${DD}/${YYYY}`;
-    case 'yyyy-mm-dd': return `${YYYY}-${MM}-${DD}`;
-    case 'full': return `${DD}/${MM}/${YYYY} ${HH}:${mm}:${ss}`;
-    case 'custom':
-      if (!customTimestampFormat) return `${DD}/${MM}/${YYYY}`;
-      return customTimestampFormat
-        .replace('DD', DD).replace('MM', MM).replace('YYYY', YYYY)
-        .replace('HH', HH).replace('mm', mm).replace('ss', ss);
-    default: return `${DD}/${MM}/${YYYY}`;
-  }
 }
 
 function drawTimestamp(context, x, y, width, height) {
@@ -824,11 +750,8 @@ function drawTimestamp(context, x, y, width, height) {
 
   const now = new Date();
   const text = formatTimestamp(now);
-
-  // fallback font family check
   const fontFamily = document.fonts && document.fonts.check && document.fonts.check(`12px ${timestampFont}`) ? timestampFont : 'monospace';
 
-  // compute position (account for flip applied during capture)
   const padding = 20;
   let posX, posY, align;
   switch (timestampPosition) {
@@ -852,9 +775,7 @@ function drawTimestamp(context, x, y, width, height) {
   }
 
   context.save();
-  // flip horizontally so text appears correct after canvas horizontal flip
   if (currentCanvasLayout === '1x1') {
-    // For 1x1 layout, draw timestamp without additional flip since we're already in flipped context
     context.translate(x, y);
     
     context.font = `${timestampSize}px ${fontFamily}`;
@@ -871,7 +792,6 @@ function drawTimestamp(context, x, y, width, height) {
 
     context.fillText(text, posX, posY);
   } else {
-    // For other layouts, use the original flip behavior
     context.translate(x + width, y);
     context.scale(-1, 1);
 
@@ -893,165 +813,13 @@ function drawTimestamp(context, x, y, width, height) {
   context.restore();
 }
 
-function captureFrame(index) {
-  const row = Math.floor(index / cols);
-  const col = index % cols;
-  const x = leftside + col * frameW;
-  const y = row * frameH;
-
-  ctx.save();
-  
-  // Flip capture area horizontally to mirror selfie like video preview
-  ctx.translate(x + frameW, y);
-  ctx.scale(-1, 1);
-
-  // Calculate aspect ratio and positioning - FIX FOR MOBILE 16:9
-  const videoAspect = video.videoWidth / video.videoHeight;
-  const frameAspect = frameW / frameH;
-  
-  let drawWidth, drawHeight, offsetX, offsetY;
-
-  if (frameAspect > videoAspect) {
-    // Frame is wider than video - fit to width (mobile 16:9 case)
-    drawWidth = frameW;
-    drawHeight = frameW / videoAspect;
-    offsetX = 0;
-    offsetY = (frameH - drawHeight) / 2;
-  } else {
-    // Frame is taller than video - fit to height (webcam 4:3 case)
-    drawHeight = frameH;
-    drawWidth = frameH * videoAspect;
-    offsetX = (frameW - drawWidth) / 2;
-    offsetY = 0;
-  }
-
-  // Fill background to avoid transparent edges
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, frameW, frameH);
-
-  // Draw video scaled properly into frame (maintain aspect ratio)
-  ctx.drawImage(video, offsetX, offsetY, drawWidth, drawHeight);
-
-  // Draw overlay scaled correctly - FIX FOR MOBILE
-  if (overlay.width > 0 && overlay.height > 0) {
-    // Calculate the actual video content area in the frame
-    const videoContentWidth = drawWidth;
-    const videoContentHeight = drawHeight;
-    
-    // Draw overlay matching the video content area
-    ctx.drawImage(
-      overlay, 
-      0, 0, overlay.width, overlay.height, // source
-      offsetX, offsetY, videoContentWidth, videoContentHeight // destination
-    );
-  }
-
-  // Draw grain on this frame
-  drawGrainOnCanvas(ctx, offsetX, offsetY, drawWidth, drawHeight);
-
-  // Draw timestamp for this frame
-  drawTimestamp(ctx, offsetX, offsetY, drawWidth, drawHeight);
-
-  ctx.restore();
-
-  // Redraw grid lines and theme on top
-  if (showGrid) {
-    redrawGridLines();
-  } else {
-    // Nếu grid bị ẩn, chỉ vẽ theme overlay
-    drawThemeOverlayTo(ctx);
-  }
-}
-
-// Hàm phụ trợ để vẽ lại grid lines
-function redrawGridLines() {
-  if (!showGrid) return; // Thêm dòng này - không vẽ grid lines nếu bị ẩn
-
-  ctx.strokeStyle = frameColor;
-  ctx.lineWidth = 20;
-  
-  // Vertical lines
-  if (cols > 1) {
-    for (let i = 1; i < cols; i++) {
-      ctx.beginPath();
-      ctx.moveTo(leftside + i * frameW, 0);
-      ctx.lineTo(leftside + i * frameW, canvasHeight);
-      ctx.stroke();
-    }
-  }
-  
-  // Horizontal lines
-  if (rows > 1) {
-    for (let i = 1; i < rows; i++) {
-      ctx.beginPath();
-      ctx.moveTo(leftside, i * frameH);
-      ctx.lineTo(canvasWidth - rightside, i * frameH);
-      ctx.stroke();
-    }
-  }
-  
-  drawOuterFrameTo(ctx);
-  drawThemeOverlayTo(ctx);
-}
-/* ===========================
-   Capture flow (6 frames)
-   =========================== */
-function startCapture() {
-  startBtn.style.display = 'none';
-  statusText.style.display = 'block';
-  drawGrid();
-
-  let count = 0;
-  let timeLeft = Math.max(1, parseInt(countdownInput.value) || 5);
-
-  const timer = setInterval(() => {
-    if (timeLeft <= 0) {
-      captureFrame(count);
-      count++;
-      if (count >= cols * rows) {
-        clearInterval(timer);
-        statusText.textContent = 'Tada!!!';
-        setTimeout(() => {
-          startBtn.style.display = 'block';
-          statusText.style.display = 'none';
-        }, 3000);
-
-        // trigger download
-        const link = document.createElement('a');
-        link.download = 'photo_strip.png';
-        link.href = canvas.toDataURL();
-        link.click();
-        return;
-      }
-      timeLeft = Math.max(1, parseInt(countdownInput.value) || 5);
-    }
-    statusText.textContent = `Ảnh ${count + 1}/${cols * rows} chụp sau ${timeLeft--}s`;
-  }, 1000);
-}
-// Thêm reference
-const canvasLayoutSelect = document.getElementById('canvasLayout');
-
-// Thêm event listener (trong phần event listeners)
-canvasLayoutSelect.addEventListener('change', (e) => {
-  updateCanvasLayout(e.target.value);
-});
-/* ===========================
-   Event listeners
-   =========================== */
-gridToggle.addEventListener('change', (e) => {
-  showGrid = e.target.checked;
-  drawGrid(); // Redraw grid với trạng thái mới
-});
-
-// Thêm phần khởi tạo khi trang load
+//CONTROL====================================================================================
 document.addEventListener('DOMContentLoaded', function() {
-  // Ẩn controls mặc định
   timestampControls.style.display = 'none';
   dialogueControls.style.display = 'none';
   timestampToggle.checked = false;
   dialogueToggle.checked = false;
   
-  // Bắt đầu detection loop
   if (animationFrameId) cancelAnimationFrame(animationFrameId);
   detectFacesLive();
 });
@@ -1059,20 +827,18 @@ document.addEventListener('DOMContentLoaded', function() {
 // Start capture
 startBtn.addEventListener('click', startCapture);
 
-// Frame color
+// Frame color control===============================
 frameColorPicker.addEventListener('input', (e) => {
   frameColor = e.target.value;
   drawGrid();
 });
 
-// Theme change
-// Theme change - SỬA PHẦN NÀY
+// Theme control===============================
 themeSelected.addEventListener("click", (e) => {
   e.stopPropagation();
   themeSelect.classList.toggle("open");
 });
 
-// Event listeners cho main theme options
 themeOptions.forEach(opt => {
   opt.addEventListener("click", (e) => {
     const value = opt.dataset.value;
@@ -1083,13 +849,12 @@ themeOptions.forEach(opt => {
   });
 });
 
-// THÊM PHẦN NÀY - Event listeners cho theme submenu options
+//SUbmenu=========================================================
 themeSubOptions.forEach(opt => {
   opt.addEventListener("click", (e) => {
     e.stopPropagation();
     const value = opt.dataset.value;
     
-    // Tìm tên theme từ text content của parent
     const parentText = opt.closest('.theme-parent').textContent.split('→')[0].trim();
     themeSelected.textContent = `${parentText} - ${opt.textContent}`;
     
@@ -1099,12 +864,11 @@ themeSubOptions.forEach(opt => {
   });
 });
 
-// Đóng menu khi click ra ngoài
 document.addEventListener("click", () => {
   themeSelect.classList.remove("open");
 });
 
-// Filter change
+// Filter control===============================
 filterSelected.addEventListener("click",(e)=>{
   e.stopPropagation();
   filterSelect.classList.toggle("open");
@@ -1135,11 +899,10 @@ dstOptions.forEach(opt=>{
 
 document.addEventListener("click",()=>filterSelect.classList.remove("open"));
 
-// Grain change
+// Grain control=================================================
 grainSelect.addEventListener('change', () => {
   currentGrain = grainSelect.value;
 
-  // pause all grains and start only selected
   Object.values(grainVideos).forEach(v => {
     try { v.pause(); v.currentTime = 0; } catch (e) {}
   });
@@ -1148,12 +911,11 @@ grainSelect.addEventListener('change', () => {
     grainVideos[currentGrain].play().catch(() => {});
   }
 
-  // force detection refresh if running
   if (animationFrameId) cancelAnimationFrame(animationFrameId);
   detectFacesLive();
 });
 
-// Grain opacity
+// Grain opacity==================================================
 grainOpacitySlider.addEventListener('input', (e) => {
   const val = parseInt(e.target.value);
   grainOpacity = val / 100;
@@ -1162,7 +924,7 @@ grainOpacitySlider.addEventListener('input', (e) => {
   detectFacesLive();
 });
 
-/* Timestamp controls */
+//Timestamp control=======================================
 timestampToggle.addEventListener('change', (e) => {
   showTimestamp = e.target.checked;
   timestampControls.style.display = showTimestamp ? 'block' : 'none';
@@ -1211,16 +973,14 @@ customFormatInput.addEventListener('input', (e) => {
   detectFacesLive();
 });
 
-/* Dialogue controls */
-/* Dialogue controls */
-// Thêm reference cho control mới
+///Dialogue control=============================================
 const dialogueScaleInput = document.getElementById('dialogueScale');
 const dialogueScaleValue = document.getElementById('dialogueScaleValue');
 
 // Thêm event listener
 dialogueScaleInput.addEventListener('input', (e) => {
   const val = parseInt(e.target.value);
-  dialogueScale = val / 100; // Chuyển từ % sang decimal (50% = 0.5, 100% = 1.0, 200% = 2.0)
+  dialogueScale = val / 100;
   dialogueScaleValue.textContent = `${val}%`;
   if (animationFrameId) cancelAnimationFrame(animationFrameId);
   detectFacesLive();
@@ -1229,7 +989,6 @@ dialogueToggle.addEventListener('change', (e) => {
   showDialogue = e.target.checked;
   dialogueControls.style.display = showDialogue ? 'block' : 'none';
   
-  // QUAN TRỌNG: Khởi tạo face detection khi bật dialogue
   if (showDialogue && !filterActive) {
     initializeFilter();
   } else {
@@ -1240,7 +999,6 @@ dialogueToggle.addEventListener('change', (e) => {
 
 dialogueSelect.addEventListener('change', (e) => {
   selectedDialogue = e.target.value;
-  // QUAN TRỌNG: Đảm bảo face detection đang chạy khi chọn dialogue
   if (showDialogue && selectedDialogue !== 'none' && !filterActive) {
     initializeFilter();
   } else {
@@ -1284,7 +1042,6 @@ dialoguePositionSel.addEventListener('change', (e) => {
   detectFacesLive();
 });
 
-/* Resize handlers */
 function handleResize() {
   if (video.videoWidth > 0 && video.videoHeight > 0) {
     overlay.width = video.videoWidth;
@@ -1299,11 +1056,9 @@ video.addEventListener('loadedmetadata', handleResize);
 window.addEventListener('resize', handleResize);
 video.addEventListener('play', handleResize);
 
-/* Preload fonts at start (one call) */
 preloadFonts();
-
-/* Initial grid draw */
 drawGrid();
+
 
 //WEATHER==============================================================================//
 let currentWeather = 'none';
@@ -1312,30 +1067,22 @@ let snowInterval = null;
 let rainInterval = null;
 let petalInterval = null;
 
-// Thêm reference cho weather elements
 const weatherParent = document.querySelector('.weather-parent');
 const weatherSubmenu = document.querySelector('.weather-submenu');
 const weatherOptions = weatherSubmenu.querySelectorAll('li');
 
-/* ===========================
-   Weather event listeners
-   =========================== */
-// Mở/đóng weather menu
 weatherParent.addEventListener('click', (e) => {
   e.stopPropagation();
   weatherSubmenu.style.display = weatherSubmenu.style.display === 'block' ? 'none' : 'block';
 });
 
-// Chọn weather option
 weatherOptions.forEach(opt => {
   opt.addEventListener('click', (e) => {
     e.stopPropagation();
     currentWeather = opt.dataset.value;
     
-    // Cập nhật giao diện hoặc thực hiện hành động tương ứng
     updateWeatherEffects();
     
-    // Đóng menu sau khi chọn
     weatherSubmenu.style.display = 'none';
   });
 });
@@ -1343,7 +1090,6 @@ document.addEventListener('click', () => {
   weatherSubmenu.style.display = 'none';
 });
 
-//chạy hiệu ứng========================
 function updateWeatherEffects() {
   stopCreatingNewWeatherEffects();
     switch(currentWeather) {
@@ -1367,7 +1113,6 @@ function updateWeatherEffects() {
 
 //Hoa đào======================================================================//
 function createFlowerPetals() {
-//mật đô=============================
   petalInterval = setInterval(() => {
     if (currentWeather === 'spring') {
       createPetal();
@@ -1379,11 +1124,9 @@ function createPetal() {
   const petal = document.createElement('div');
   petal.classList.add('leaf');
   petal.innerHTML = '🌸';
-//kích thước==================================
   const size = Math.random() * 25 + 15;
   petal.style.fontSize = `${size}px`;
   petal.style.left = `${Math.random() * 100}vw`;
-//tốc độ======================================
   const duration = Math.random() * 20 + 12;
   const sway = Math.random() * 80 - 40;
 
@@ -1392,7 +1135,6 @@ function createPetal() {
   petal.style.opacity = Math.random() * 0.6 + 0.4;
   
   document.body.appendChild(petal);
-//tự động biến mất===============================
   setTimeout(() => {
     if (petal.parentNode) petal.remove();
   }, duration * 5000);
@@ -1401,7 +1143,6 @@ function createPetal() {
 //Mưa=====================================================================//
 function startRain() {
   createRaindrop();
-  //mật độ===================================
   rainInterval = setInterval(() => {
     if (currentWeather === 'summer') {
       createRaindrop();
@@ -1419,33 +1160,26 @@ function createRaindrop() {
   const raindrop = document.createElement('div');
   raindrop.classList.add('raindrop');
   
-//Tạo giọt mưa bằng CSS thay vì emoji==================================
   raindrop.style.width = '2px';
   raindrop.style.height = '20px';
   raindrop.style.background = 'linear-gradient(to bottom, transparent, #a0d0ff, #70b0ff)';
   raindrop.style.borderRadius = '1px';
   
-// Vị trí==========================================
   raindrop.style.left = `${Math.random() * 100}vw`;
   
-// Tốc độ rơi=========================================
   const duration = Math.random() * 0.8 + 0.4;
   raindrop.style.animation = `rain-fall ${duration}s linear forwards`;
   
-//Độ mờ==========================================
   raindrop.style.opacity = Math.random() * 0.7 + 0.3;
   
-//Độ dài giọt mưa============================
   const length = Math.random() * 15 + 10;
   raindrop.style.height = `${length}px`;
   
-//Độ rộng============================
   const width = Math.random() * 1 + 1;
   raindrop.style.width = `${width}px`;
   
   document.body.appendChild(raindrop);
   
-//Tự động xóa======================
   setTimeout(() => {
     if (raindrop.parentNode) {
       raindrop.remove();
@@ -1453,9 +1187,8 @@ function createRaindrop() {
   }, duration * 1000);
 }
 
-//Leaf fall functions==========================================================//
+//Leaf fall==========================================================//
 function startLeafFall() {
-//Mật độ=======================================================
   createLeaf();
   leafInterval = setInterval(() => {
     if (currentWeather === 'autumn') {
@@ -1468,30 +1201,23 @@ function createLeaf() {
   const leaf = document.createElement('div');
   leaf.classList.add('leaf');
   
-//Các loại lá mùa thu=========================================
   const leaves = ['🍁', '🍂'];
   const randomLeaf = leaves[Math.floor(Math.random() * leaves.length)];
   leaf.innerHTML = randomLeaf;
   
-//Kích thước==================================================
   const size = Math.random() * 30 + 15;
   leaf.style.fontSize = `${size}px`;
   
-//Vị trí=========================================================
   leaf.style.left = `${Math.random() * 100}vw`;
   
-//Tốc độ rơi====================================================
   const duration = Math.random() * 10 + 5;
   const sway = Math.random() * 100 - 50;
   
-//độ lắc=========================================================
   leaf.style.setProperty('--sway', `${sway}px`);
   leaf.style.animation = `leaf-fall ${duration}s linear forwards`;
   
-//Độ mờ=========================================================
   leaf.style.opacity = Math.random() * 0.7 + 0.3;
   
-//Màu sắc====================================================
   const colors = ['#ff6b35',
     '#f4a261',
     '#e76f51',
@@ -1501,7 +1227,6 @@ function createLeaf() {
   leaf.style.color = randomColor;
   document.body.appendChild(leaf);
 
-//Tự động xóa=================================================
   setTimeout(() => {
     if (leaf.parentNode) {
       leaf.remove();
@@ -1512,7 +1237,6 @@ function createLeaf() {
 //Snow===============================================================================//
 function startSnowFall() {
   createSnowflake();
-  //mật độ===================
   snowInterval = setInterval(() => {
     if (currentWeather === 'winter') {
       createSnowflake();
@@ -1520,33 +1244,26 @@ function startSnowFall() {
   }, Math.random() * 100 + 75);
 }
 
-//================================//
 function createSnowflake() {
   if (currentWeather !== 'winter') return;
   const snowflake = document.createElement('div');
   snowflake.classList.add('snowflake');
   snowflake.innerHTML = '❄';
   
-//Kích thước=================================
   const size = Math.random() * 20 + 10;
   snowflake.style.fontSize = `${size}px`;
   
-//Vị trí=======================================
   snowflake.style.left = `${Math.random() * 100}vw`;
   
-//Tốc độ rơi ngẫu nhiên===========================
   const duration = Math.random() * 8 + 5;
   snowflake.style.animation = `fall ${duration}s linear forwards`;
   
-//Độ mờ========================================
   snowflake.style.opacity = Math.random() * 0.8 + 0.2;
   
-//Xoay========================================
   const rotation = Math.random() * 360;
   snowflake.style.transform = `rotate(${rotation}deg)`;
   document.body.appendChild(snowflake);
   
-//Tự động xóa================================
   setTimeout(() => {
     if (snowflake.parentNode) {
       snowflake.remove();
@@ -1554,7 +1271,6 @@ function createSnowflake() {
   }, duration * 4000);
 }
 
-//hiển thị nốt hiệu ứng sau khi dừng======================================================//
 function stopCreatingNewWeatherEffects() {
   if (leafInterval) {
     clearInterval(leafInterval);
@@ -1582,21 +1298,18 @@ document.addEventListener('DOMContentLoaded', function() {
   updateWeatherEffects();
 });
 
-// ===========================
-// Music controls & lyrics
-// ===========================
+//NHẠC=========================================================================================
 let currentMusic = 'none';
 let lyricsInterval = null;
 let currentLyricIndex = 0;
 
-// Thêm reference cho music elements
 const musicParent = document.querySelector('.music-parent');
 const musicSubmenu = document.querySelector('.music-submenu');
 const musicOptions = musicSubmenu.querySelectorAll('li');
 const lyricsContainer = document.getElementById('lyricsContainer');
 const lyricsText = document.getElementById('lyricsText');
 
-// Lời bài hát "Nơi này có anh" với thời gian hiển thị riêng cho mỗi câu (đơn vị: milliseconds)
+// Nơi này có anh
 const noiNayCoAnhLyrics = [
   { text: "Em là ai bước đến nơi đây dịu dàng chân phương", duration: 5000 },
   { text: "Em là ai tựa như ánh nắng ban mai ngọt ngào trong sương", duration: 5000 },
@@ -1629,35 +1342,23 @@ const noiNayCoAnhLyrics = [
   { text: "𝅘𝅥𝅯 𝅘𝅥 𝅘𝅥𝅮 𝅘𝅥𝅯 𝅘𝅥 𝅘𝅥𝅮", duration: 6000 }, 
 ];
 
-/* Music event listeners */
-// Mở/đóng music menu
+
 musicParent.addEventListener('click', (e) => {
   e.stopPropagation();
   musicSubmenu.style.display = musicSubmenu.style.display === 'block' ? 'none' : 'block';
 });
-
-// Chọn music option
 musicOptions.forEach(opt => {
   opt.addEventListener('click', (e) => {
     e.stopPropagation();
     currentMusic = opt.dataset.value;
-    
-    // Cập nhật hiển thị lời bài hát
-    updateMusicEffects();
-    
-    // Đóng menu sau khi chọn
+    updateMusicEffects();   
     musicSubmenu.style.display = 'none';
   });
 });
 
-document.addEventListener('click', () => {
-  musicSubmenu.style.display = 'none';
-});
 
-// Cập nhật hiệu ứng âm nhạc và lời bài hát
 function updateMusicEffects() {
   stopCurrentMusic();
-  
   switch(currentMusic) {
     case 'none':
       hideLyrics();
@@ -1670,7 +1371,6 @@ function updateMusicEffects() {
   safeLog(`Music changed to: ${currentMusic}`);
 }
 
-// Dừng nhạc hiện tại
 function stopCurrentMusic() {
   if (lyricsInterval) {
     clearInterval(lyricsInterval);
@@ -1679,51 +1379,40 @@ function stopCurrentMusic() {
   currentLyricIndex = 0;
 }
 
-// Hiển thị container lời bài hát
 function showLyrics() {
   lyricsContainer.style.display = 'block';
   lyricsText.textContent = '';
   lyricsText.classList.remove('show');
 }
 
-// Ẩn container lời bài hát
 function hideLyrics() {
   lyricsContainer.style.display = 'none';
   lyricsText.classList.remove('show');
 }
 
-// Bắt đầu hiển thị lời bài hát
 function startLyricsDisplay() {
   if (currentMusic !== 'Nơi này có anh') return;
-  
   currentLyricIndex = 0;
-  
-  // Hiển thị lời đầu tiên ngay lập tức
   displayNextLyric();
 }
 
-// Hiển thị lời bài hát tiếp theo
 function displayNextLyric() {
   if (currentMusic !== 'Nơi này có anh') return;
   
   if (currentLyricIndex >= noiNayCoAnhLyrics.length) {
-    currentLyricIndex = 0; // Quay lại từ đầu khi hết bài
+    currentLyricIndex = 0; 
   }
   
   const currentLyric = noiNayCoAnhLyrics[currentLyricIndex];
   
-  // Ẩn lời cũ với hiệu ứng
   lyricsText.classList.remove('show');
   
-  // Sau khi ẩn, cập nhật lời mới và hiện lại
   setTimeout(() => {
     lyricsText.textContent = currentLyric.text;
     lyricsText.classList.add('show');
     
-    // Tăng index cho lần tiếp theo
     currentLyricIndex++;
     
-    // Thiết lập timeout cho lời tiếp theo với thời gian riêng
     if (currentLyricIndex < noiNayCoAnhLyrics.length || currentMusic === 'Nơi này có anh') {
       const nextLyric = noiNayCoAnhLyrics[currentLyricIndex];
       const displayTime = currentLyric.duration;
@@ -1732,15 +1421,161 @@ function displayNextLyric() {
         displayNextLyric();
       }, displayTime);
     }
-  }, 0); // Thời gian fade out
+  }, 0)
 }
-
-// Khởi tạo khi trang load
+//================================================================================================
 document.addEventListener('DOMContentLoaded', function() {
   updateMusicEffects();
 });
+
 document.addEventListener('DOMContentLoaded', function() {
-  updateCanvasLayout('3x2'); // hoặc layout mặc định bạn muốn
-  // ... các khởi tạo khác
+  updateCanvasLayout('3x2');
+});
+document.addEventListener('click', () => {
+  musicSubmenu.style.display = 'none';
 });
 
+
+
+//CHỤP ẢNH==================================================================
+function captureFrame(index) {
+  const row = Math.floor(index / cols);
+  const col = index % cols;
+  const x = leftside + col * frameW;
+  const y = row * frameH;
+
+  ctx.save();
+  
+  ctx.translate(x + frameW, y);
+  ctx.scale(-1, 1);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, frameW, frameH);
+
+  const videoAspect = video.videoWidth / video.videoHeight;
+  const frameAspect = frameW / frameH;
+  
+  let drawWidth, drawHeight, offsetX, offsetY;
+  let sourceX = 0, sourceY = 0, sourceWidth = video.videoWidth, sourceHeight = video.videoHeight;
+
+  if (frameAspect > videoAspect) {
+    drawWidth = frameW;
+    drawHeight = frameW / videoAspect;
+    offsetX = 0;
+    offsetY = (frameH - drawHeight) / 2;
+    
+    const cropHeight = video.videoWidth / frameAspect;
+    sourceY = (video.videoHeight - cropHeight) / 2;
+    sourceHeight = cropHeight;
+  } else {
+    drawHeight = frameH;
+    drawWidth = frameH * videoAspect;
+    offsetX = (frameW - drawWidth) / 2;
+    offsetY = 0;
+    
+    const cropWidth = video.videoHeight * frameAspect;
+    sourceX = (video.videoWidth - cropWidth) / 2;
+    sourceWidth = cropWidth;
+  }
+
+  ctx.drawImage(
+    video,
+    sourceX, sourceY, sourceWidth, sourceHeight,
+    0, 0, frameW, frameH 
+  );
+
+  if (overlay.width > 0 && overlay.height > 0) {
+    const overlaySourceX = (overlay.width / video.videoWidth) * sourceX;
+    const overlaySourceY = (overlay.height / video.videoHeight) * sourceY;
+    const overlaySourceWidth = (overlay.width / video.videoWidth) * sourceWidth;
+    const overlaySourceHeight = (overlay.height / video.videoHeight) * sourceHeight;
+    
+    ctx.drawImage(
+      overlay,
+      overlaySourceX, overlaySourceY, overlaySourceWidth, overlaySourceHeight, 
+      0, 0, frameW, frameH
+    );
+  }
+
+  drawGrainOnCanvas(ctx, 0, 0, frameW, frameH);
+  drawTimestamp(ctx, 0, 0, frameW, frameH);
+
+  ctx.restore();
+
+  if (showGrid) {
+    redrawGridLines();
+  } else {
+    drawThemeOverlayTo(ctx);
+  }
+}
+
+
+//Vẽ lại viền 
+function redrawGridLines() {
+  if (!showGrid) return;
+
+  ctx.strokeStyle = frameColor;
+  ctx.lineWidth = 20;
+  if (cols > 1) {
+    for (let i = 1; i < cols; i++) {
+      ctx.beginPath();
+      ctx.moveTo(leftside + i * frameW, 0);
+      ctx.lineTo(leftside + i * frameW, canvasHeight);
+      ctx.stroke();
+    }
+  }
+  
+  if (rows > 1) {
+    for (let i = 1; i < rows; i++) {
+      ctx.beginPath();
+      ctx.moveTo(leftside, i * frameH);
+      ctx.lineTo(canvasWidth - rightside, i * frameH);
+      ctx.stroke();
+    }
+  }
+  
+  drawOuterFrameTo(ctx);
+  drawThemeOverlayTo(ctx);
+}
+function startCapture() {
+  startBtn.style.display = 'none';
+  statusText.style.display = 'block';
+  drawGrid();
+
+  let count = 0;
+  let timeLeft = Math.max(1, parseInt(countdownInput.value) || 5);
+
+  const timer = setInterval(() => {
+    if (timeLeft <= 0) {
+      captureFrame(count);
+      count++;
+      if (count >= cols * rows) {
+        clearInterval(timer);
+        statusText.textContent = 'Tada!!!';
+        setTimeout(() => {
+          startBtn.style.display = 'block';
+          statusText.style.display = 'none';
+        }, 3000);
+
+        const link = document.createElement('a');
+        link.download = 'photo_strip.png';
+        link.href = canvas.toDataURL();
+        link.click();
+        return;
+      }
+      timeLeft = Math.max(1, parseInt(countdownInput.value) || 5);
+    }
+    statusText.textContent = `Ảnh ${count + 1}/${cols * rows} chụp sau ${timeLeft--}s`;
+  }, 1000);
+}
+const canvasLayoutSelect = document.getElementById('canvasLayout');
+
+canvasLayoutSelect.addEventListener('change', (e) => {
+  updateCanvasLayout(e.target.value);
+});
+
+
+gridToggle.addEventListener('change', (e) => {
+  showGrid = e.target.checked;
+  drawGrid(); 
+});
