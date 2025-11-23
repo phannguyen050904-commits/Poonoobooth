@@ -693,11 +693,11 @@ main {
   .header-left { gap: 1rem; margin-right: 0.5rem;}
   .header-right { gap: 1rem; }
 
-  main { padding: 1rem; }
+  main { padding: 0.2rem; }
   .app-container { grid-template-columns: 1fr; margin-top: 1rem; }
 
-  .camera-section,
-  .canvas-section { padding: 1rem; }
+  .camera-section { padding: 0.5rem; }
+  .canvas-section { padding: 0.5rem; }
 
   .camera-title,
   .canvas-title { font-size: 1.25rem; }
@@ -714,5 +714,9 @@ main {
   .control-group select { width: 100%; }
 
   .timestamp-controls-container,
-  .dialogue-controls-container { padding: 1rem; }
+  .dialogue-controls-container { padding: 1rem; };
+  .leaf{font-size: 0.3rem}
+  .snowflake{font-size: 0.3rem}
+
+
 }
