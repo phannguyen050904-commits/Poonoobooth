@@ -163,7 +163,6 @@ function drawGrid() {
     ctx.fillStyle = '#eee';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // main strokes - CHỈ VẼ NẾU SHOWGRID = TRUE
   if (showGrid) {
     ctx.strokeStyle = frameColor;
     drawOuterFrameTo(ctx);
@@ -171,7 +170,6 @@ function drawGrid() {
     const innerLineWidth = 20;
     ctx.lineWidth = innerLineWidth;
 
-    // Vertical lines (only if more than 1 column)
     if (cols > 1) {
       for (let i = 1; i < cols; i++) {
         ctx.beginPath();
@@ -181,7 +179,6 @@ function drawGrid() {
       }
     }
 
-    // Horizontal lines (only if more than 1 row)
     if (rows > 1) {
       for (let i = 1; i < rows; i++) {
         ctx.beginPath();
@@ -195,7 +192,7 @@ function drawGrid() {
   drawThemeOverlayTo(ctx);
 }
 function drawOuterFrameTo(ctxRef) {
-  if (!showGrid) return; // Thêm dòng này - không vẽ outer frame nếu grid bị ẩn
+  if (!showGrid) return; 
 
   const outerLineWidth = 20;
   const bottomLineWidth = bottomPadding || 20;
@@ -203,7 +200,6 @@ function drawOuterFrameTo(ctxRef) {
 
   ctxRef.strokeStyle = frameColor;
 
-  // Outer rectangles (left and right lines)
   ctxRef.lineWidth = outerLineWidth;
   ctxRef.beginPath();
   ctxRef.moveTo(outerLineWidth / 2, outerLineWidth / 2);
@@ -214,14 +210,12 @@ function drawOuterFrameTo(ctxRef) {
   ctxRef.lineTo(canvasWidth - outerLineWidth / 2, canvasHeight - outerLineWidth / 2);
   ctxRef.stroke();
 
-  // Bottom thick line (only if bottomPadding exists)
   if (bottomPadding > 0) {
     ctxRef.lineWidth = bottomLineWidth;
     ctxRef.beginPath();
     
-    // Tùy chỉnh độ dài bottom line theo layout
     let shortBottomWidth;
-    
+  
     switch(currentCanvasLayout) {
       case '4x1':
         shortBottomWidth = canvasWidth * 1; 
@@ -977,7 +971,6 @@ customFormatInput.addEventListener('input', (e) => {
 const dialogueScaleInput = document.getElementById('dialogueScale');
 const dialogueScaleValue = document.getElementById('dialogueScaleValue');
 
-// Thêm event listener
 dialogueScaleInput.addEventListener('input', (e) => {
   const val = parseInt(e.target.value);
   dialogueScale = val / 100;
