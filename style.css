@@ -693,8 +693,8 @@ main {
   .header-left { gap: 1rem; margin-right: 0.5rem;}
   .header-right { gap: 1rem; }
 
-  main { padding: 0.2rem; width: 70%; margin: 0; max-width: 100%; }
-  .app-container { grid-template-columns: 1fr; margin-top: 1rem; }
+  main { padding: 0.2rem;}
+  .app-container { grid-template-columns: 1fr; margin-top: 1rem; max-width: 80%; }
 
   .camera-section { padding: 0.5rem; }
   .canvas-section { padding: 0.5rem; }
