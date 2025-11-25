@@ -1,13 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XZF03BNZ1P"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-XZF03BNZ1P');
-  </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PooNoobooth</title>
@@ -15,10 +8,13 @@
 </head>
 <body>
   
+  <!-- HEADER -->
   <header>
     <div class="header-content">
       <div class="header-left">
         <div class="logo">PooNoobooth</div>
+        
+        <!-- Music Menu -->
         <li class="music-parent">
           <img src="icons/music_icon.png" class="music_icon" alt="music">
           <ul class="music-submenu">
@@ -26,6 +22,8 @@
             <li data-value="Nơi này có anh">Nơi này có anh</li>
           </ul>
         </li>
+        
+        <!-- Weather Menu -->
         <li class="weather-parent">
           <img src="icons/weather_icon.png" class="weather_icon" alt="weather">
           <ul class="weather-submenu">
@@ -48,31 +46,36 @@
     </div>
   </header>
 
-
-
-
+  <!-- MAIN CONTENT -->
   <main>
     <div class="app-container">
+      
+      <!-- CAMERA SECTION -->
       <section class="camera-section">
+        <!-- Lyrics Display -->
         <div id="lyricsContainer" class="lyrics-container" style="display: none;">
           <div id="lyricsText" class="lyrics-text"></div>
         </div>
+        
+        <!-- Video Container -->
         <div class="video-container">
           <video id="video" autoplay playsinline></video>
-          <canvas id="overlay"></canvas> 
+          <canvas id="overlay"></canvas>
         </div>
         
+        <!-- CONTROLS -->
         <div class="controls">
+          <!-- Capture Button -->
           <div class="action-buttons">
             <button id="start">Chụp ảnh</button>
             <div id="status">Đang chụp...</div>
           </div>
           
+          <!-- Timestamp Controls -->
           <div class="control-group">
             <label for="timestampToggle">Hiển thị thời gian:</label>
             <input type="checkbox" id="timestampToggle"/>
           </div>
-
           <div class="timestamp-controls-container" id="timestampControls">
             <div class="control-group">
               <label for="timestampFormat">Định dạng:</label>
@@ -84,7 +87,10 @@
                 <option value="custom">Tùy chỉnh</option>
               </select>
             </div>
-
+            <div class="control-group" id="customFormatGroup" style="display: none;">
+              <label for="customFormat">Định dạng tùy chỉnh:</label>
+              <input type="text" id="customFormat" placeholder="DD-MM-YYYY HH:mm" />
+            </div>
             <div class="control-group">
               <label for="timestampFont">Phông chữ:</label>
               <select id="timestampFont">
@@ -92,7 +98,6 @@
                 <option value="FontLiS">duducaligraphy</option>
               </select>
             </div>
-
             <div class="control-group">
               <label for="timestampSize">Cỡ chữ:</label>
               <input type="number" id="timestampSize" min="10" max="64" value="36" />
@@ -106,18 +111,13 @@
                 <option value="bottom-right">Dưới trái</option>
               </select>
             </div>
-
-            <div class="control-group" id="customFormatGroup" style="display: none;">
-              <label for="customFormat">Định dạng tùy chỉnh:</label>
-              <input type="text" id="customFormat" placeholder="DD-MM-YYYY HH:mm" />
-            </div>
           </div>
 
+          <!-- Dialogue Controls -->
           <div class="control-group">
             <label for="dialogueToggle">Hiển thị dialogue:</label>
             <input type="checkbox" id="dialogueToggle"/>
           </div>
-          
           <div class="dialogue-controls-container" id="dialogueControls">
             <div class="control-group">
               <label for="dialogueText">Nội dung:</label>
@@ -131,15 +131,12 @@
                 <option value="speech_bubble_2">Bong bóng 2</option>
                 <option value="pixel_bubble_1">Bong bóng pixel</option>
               </select>
-              </div>
-              <div class="control-group">
-                <label for="dialogueScale"></label>
-                <input type="range" id="dialogueScale" min="50" max="200" value="100" />
-                <span id="dialogueScaleValue">100%</span>
-              </div>
-
-            
-
+            </div>
+            <div class="control-group">
+              <label for="dialogueScale">Kích thước:</label>
+              <input type="range" id="dialogueScale" min="50" max="200" value="100" />
+              <span id="dialogueScaleValue">100%</span>
+            </div>
             <div class="control-group">
               <label for="dialogueFont">Phông chữ:</label>
               <select id="dialogueFont">
@@ -147,17 +144,14 @@
                 <option value="FontPixel">Pixel Font</option>
               </select>
             </div>
-
             <div class="control-group">
               <label for="dialogueSize">Cỡ chữ:</label>
               <input type="number" id="dialogueSize" min="10" max="48" value="16" />
             </div>
-
             <div class="control-group">
               <label for="dialogueColor">Màu chữ:</label>
               <input type="color" id="dialogueColor" value="#000000" />
             </div>
-
             <div class="control-group">
               <label for="dialoguePosition">Vị trí dialogue:</label>
               <select id="dialoguePosition">
@@ -167,28 +161,33 @@
             </div>
           </div>
 
+          <!-- Canvas Layout -->
           <div class="control-group">
             <label for="countdownTime">Đếm ngược (s):</label>
             <input type="number" id="countdownTime" min="1" max="10" value="5" />
           </div>
           <div class="control-group">
-          <label for="canvasLayout">Canvas Layout:</label>
-          <select id="canvasLayout">
-            <option value="3x2">3:2</option>
-            <option value="4x1">4:1</option>
-            <option value="2x2">2:2</option>
-            <option value="2x1">2:1</option>
-            <option value="1x1">1:1</option>
-          </select>
-        </div>
+            <label for="canvasLayout">Canvas Layout:</label>
+            <select id="canvasLayout">
+              <option value="3x2">3:2</option>
+              <option value="4x1">4:1</option>
+              <option value="2x2">2:2</option>
+              <option value="2x1">2:1</option>
+              <option value="1x1">1:1</option>
+            </select>
+          </div>
+          
+          <!-- Frame Controls -->
           <div class="control-group">
-          <label for="gridToggle">Hiển thị viền:</label>
-          <input type="checkbox" id="gridToggle" checked />
-        </div>
+            <label for="gridToggle">Hiển thị viền:</label>
+            <input type="checkbox" id="gridToggle" checked />
+          </div>
           <div class="control-group">
             <label for="frameColor">Màu viền:</label>
             <input type="color" id="frameColor" value="#4f6d8f" />
           </div>
+          
+          <!-- Theme Select -->
           <div class="control-group">
             <label for="themeSelect">Chủ đề:</label>
             <div class="custom-select" id="themeSelect">
@@ -206,18 +205,11 @@
                     <li data-value="GAMTIME">GAMTIME scr:notlith_07</li>
                   </ul>
                 </li>
-                <li class="theme-parent">2:2 →
-                  <ul class="theme-submenu">
-                  </ul>
-                </li>
-                <li class="theme-parent">2:1 →
-                  <ul class="theme-submenu">
-                  </ul>
-                </li>
               </ul>
             </div>
           </div>
           
+          <!-- Filter Select -->
           <div class="control-group">
             <label>Filter</label>
             <div class="custom-select" id="filterSelect">
@@ -225,12 +217,6 @@
               <ul class="select-menu">
                 <li data-value="none">Không</li>
                 <li data-value="Sơn Tùng-MTP">Sơn Tùng-MTP</li>
-
-                <li class="dst-parent">Colt →
-                  <ul class="dst-submenu">
-                    <li data-value="mũ đầu bếp">mũ đầu bếp</li>
-                  </ul>
-                </li>
                 <li class="dst-parent">DST →
                   <ul class="dst-submenu">
                     <li data-value="buffalo hat">buffalo hat</li>
@@ -273,10 +259,35 @@
                     <li data-value="hat technical 2">hat technical 2</li>
                   </ul>
                 </li>
+                <li class="dst-parent">idol →
+                  <ul class="dst-submenu">
+                    <li data-value="Fakerlike">Fakerlike</li>
+                  </ul>
+                </li>
               </ul>
             </div>
           </div>
-
+          <div class="control-group" id="filterPositionControls" style="display: none;">
+            <label>Điều chỉnh vị trí filter:</label>
+            <div class="position-controls">
+              <div class="position-row">
+                <button class="position-btn" data-direction="up">↑</button>
+              </div>
+              <div class="position-row">
+                <button class="position-btn" data-direction="left">←</button>
+                <button class="position-btn" data-direction="center">↺</button>
+                <button class="position-btn" data-direction="right">→</button>
+              </div>
+              <div class="position-row">
+                <button class="position-btn" data-direction="down">↓</button>
+              </div>
+            </div>
+            <div class="position-values">
+              <span>Offset X: <span id="offsetXValue">0</span></span>
+              <span>Offset Y: <span id="offsetYValue">0</span></span>
+            </div>
+          </div>
+          <!-- Grain Overlay -->
           <div class="control-group">
             <label for="grainSelect">Overlay</label>
             <select id="grainSelect">
@@ -286,7 +297,6 @@
               <option value="hardgrain">Hard Grain</option>
             </select>
           </div>
-
           <div class="control-group">
             <label for="grainOpacity">Độ mờ overlay:</label>
             <input type="range" id="grainOpacity" min="0" max="100" value="25" />
@@ -295,7 +305,7 @@
         </div>
       </section>
 
-      <!-- Canvas Kết quả -->
+      <!-- CANVAS SECTION -->
       <section class="canvas-section">
         <h2 class="canvas-title">Photo</h2>
         <div class="canvas-container">

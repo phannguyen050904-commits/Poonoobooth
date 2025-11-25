@@ -1,24 +1,17 @@
-
 const video = document.getElementById('video');
 const overlay = document.getElementById('overlay');
 const overlayCtx = overlay.getContext('2d');
-
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-
 const startBtn = document.getElementById('start');
 const statusText = document.getElementById('status');
-
 const frameColorPicker = document.getElementById('frameColor');
 const countdownInput = document.getElementById('countdownTime');
 
-//grains=========================================================
+// Elements
 const grainSelect = document.getElementById('grainSelect');
 const grainOpacitySlider = document.getElementById('grainOpacity');
 const grainOpacityValue = document.getElementById('grainOpacityValue');
-
-
-// Timestamp========================================================
 const timestampControls = document.getElementById('timestampControls');
 const timestampToggle = document.getElementById('timestampToggle');
 const timestampFormatSel = document.getElementById('timestampFormat');
@@ -26,18 +19,12 @@ const timestampFontSel = document.getElementById('timestampFont');
 const timestampSizeInput = document.getElementById('timestampSize');
 const timestampColorInput = document.getElementById('timestampColor') || null;
 const timestampPositionSel = document.getElementById('timestampPosition');
-
-
 const customFormatInput = document.getElementById('customFormat');
 const customFormatGroup = document.getElementById('customFormatGroup');
-
-// Filter & Theme========================================================
 const filterSelect = document.getElementById('filterSelect');
 const filterSelected = filterSelect.querySelector('.selected');
 const filterOptions = filterSelect.querySelectorAll('.select-menu > li:not(.dst-parent)');
 const dstOptions = filterSelect.querySelectorAll('.dst-submenu li');
-
-// Dialogue========================================================
 const dialogueToggle = document.getElementById('dialogueToggle');
 const dialogueControls = document.getElementById('dialogueControls');
 const dialogueSelect = document.getElementById('dialogueSelect');
@@ -46,37 +33,31 @@ const dialogueFontSel = document.getElementById('dialogueFont');
 const dialogueSizeInput = document.getElementById('dialogueSize');
 const dialogueColorInput = document.getElementById('dialogueColor');
 const dialoguePositionSel = document.getElementById('dialoguePosition');
-
-//theme==========================================================
+const dialogueScaleInput = document.getElementById('dialogueScale');
+const dialogueScaleValue = document.getElementById('dialogueScaleValue');
+const themeSelect = document.getElementById('themeSelect');
 const themeSelected = themeSelect.querySelector('.selected');
 const themeOptions = themeSelect.querySelectorAll('.select-menu > li:not(.theme-parent)');
 const themeSubOptions = themeSelect.querySelectorAll('.theme-submenu li');
-
-//grid==============================================================
 const gridToggle = document.getElementById('gridToggle');
+const canvasLayoutSelect = document.getElementById('canvasLayout');
+const videoContainer = document.querySelector('.video-container');
 
-//App state=================================================//
+// App state
 let frameColor = '#4f6d8f';
 let currentTheme = 'none';
 let selectedFilter = 'none';
 let filterActive = false;
-
 let themeImages = {};   
 let filterImages = {};
 let dialogueImages = {}; 
-
 let grainVideos = {};  
 let currentGrain = 'none';
 let grainOpacity = 0.25;
-
 let detectionInProgress = false;
 let animationFrameId = null;
 let faceModelsLoaded = false;
-
 let showGrid = true; 
-
-
-/* Timestamp state=====================================================*/
 let showTimestamp = false;
 let timestampFormat = 'dd/mm/yyyy';
 let timestampFont = 'FontTime';
@@ -84,8 +65,6 @@ let timestampSize = 36;
 let timestampColor = '#ffffff';
 let timestampPosition = 'bottom-right';
 let customTimestampFormat = '';
-
-/* Dialogue state=====================================================*/
 let showDialogue = false;
 let selectedDialogue = 'none';
 let dialogueText = '';
@@ -93,8 +72,7 @@ let dialogueFont = 'MyFont';
 let dialogueSize = 16;
 let dialogueColor = '#000000';
 let dialoguePosition = 'top-left';
-let dialogueScale = 1.0; // Thêm dòng này
-
+let dialogueScale = 1.0;
 let currentCanvasLayout = '1x1';
 let canvasWidth = 960;
 let canvasHeight = 1280;
@@ -103,13 +81,21 @@ let cols = 2;
 let frameW, frameH, bottomPadding;
 let leftside = 0;
 let rightside = 0;
+let currentWeather = 'none';
+let leafInterval = null;
+let snowInterval = null;
+let rainInterval = null;
+let petalInterval = null;
+let currentMusic = 'none';
+let lyricsInterval = null;
+let currentLyricIndex = 0;
 
+// Filter position adjustment state
+let filterOffsetX = 0;
+let filterOffsetY = 0;
+let currentFilterAdjustments = {};
 
-// frames====================================================================
-const $ = id => document.getElementById(id);
-
-function safeLog(...args) { console.log(...args); }
-function safeErr(...args) { console.error(...args); }
+// Canvas layouts
 const canvasLayouts = {
   '3x2': { width: 960, height: 1280, rows: 3, cols: 2, bottomPadding: 1280/(8-5/3), side: 0 },
   '4x1': { width: 480, height: 1440, rows: 4, cols: 1, bottomPadding: 120, rightside: 20 , leftside: 20},
@@ -117,9 +103,46 @@ const canvasLayouts = {
   '2x1': { width: 480, height: 960, rows: 2, cols: 1, bottomPadding: 240 },
   '1x1': { width: 480, height: 640, rows: 1, cols: 1, bottomPadding: 160 }
 };
-const videoContainer = document.querySelector('.video-container');
 
-// cập nhật frames====================================================
+// Lyrics data
+const noiNayCoAnhLyrics = [
+  { text: "Em là ai bước đến nơi đây dịu dàng chân phương", duration: 5000 },
+  { text: "Em là ai tựa như ánh nắng ban mai ngọt ngào trong sương", duration: 5000 },
+  { text: "Ngắm em thật lâu", duration: 2500 },
+  { text: "Con tim anh yếu mềm", duration: 2500 },
+  { text: "Đắm say từ phút đó", duration: 2500 },
+  { text: "Từng giây trôi yêu thêm", duration: 3500 },
+  { text: "Bao ngày qua bình minh đánh thức xua tan bộn bề nơi anh", duration: 5000 },
+  { text: "Bao ngày qua niềm thương nỗi nhớ bay theo bầu trời trong xanh", duration: 5000 },
+  { text: "Liếc đôi hàng mi", duration: 3000 },
+  { text: "Mong manh anh thẫn thờ", duration: 2900 },
+  { text: "Muốn hôn nhẹ mái tóc", duration: 2000 },
+  { text: "Bờ môi em anh mơ", duration: 2800 },
+  { text: "Cầm tay anh dựa vai anh", duration: 2400 },
+  { text: "Kề bên anh nơi này có anh", duration: 2400 },
+  { text: "Gió mang câu tình ca", duration: 1900 },
+  { text: "Ngàn ánh sao vụt qua nhẹ ôm lấy em", duration: 3500 },
+  { text: "Cầm tay anh dựa vai anh", duration: 2400 },
+  { text: "Kề bên anh nơi này có anh", duration: 2400 },
+  { text: "Khép đôi mi thật lâu", duration: 2000 },
+  { text: "Nguyện mãi bên cạnh nhau yêu say đắm như ngày đầu", duration: 4000 },
+  { text: "Mùa xuân đến bình yên", duration: 2750 },
+  { text: "Cho anh những giấc mơ", duration: 2600 },
+  { text: "Hạ lưu giữ ngày mưa", duration: 2700 },
+  { text: "Ngọt ngào nên thơ", duration: 2500 },
+  { text: "Mùa thu lá vàng rơi", duration: 2700 },
+  { text: "Đông sang anh nhớ em", duration: 2500 },
+  { text: "Tình yêu bé nhỏ xin", duration: 2500 },
+  { text: "Dành tặng riêng em", duration: 3000 },  
+  { text: "𝅘𝅥𝅯 𝅘𝅥 𝅘𝅥𝅮 𝅘𝅥𝅯 𝅘𝅥 𝅘𝅥𝅮", duration: 6000 }, 
+];
+
+// Utility functions
+function safeLog(...args) { console.log(...args); }
+function safeErr(...args) { console.error(...args); }
+const $ = id => document.getElementById(id);
+
+// Canvas and layout functions
 function updateVideoAspectRatio(layout) {
   if (!videoContainer) return;
   
@@ -133,6 +156,7 @@ function updateVideoAspectRatio(layout) {
     videoContainer.classList.remove('aspect-1-1');
   }
 }
+
 function updateCanvasLayout(layout) {
   if (!canvasLayouts[layout]) return;
   
@@ -158,9 +182,8 @@ function updateCanvasLayout(layout) {
   drawGrid();
 }
 
-//Vẽ viền=====================================================
 function drawGrid() {
-    ctx.fillStyle = '#eee';
+  ctx.fillStyle = '#eee';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   if (showGrid) {
@@ -191,6 +214,7 @@ function drawGrid() {
 
   drawThemeOverlayTo(ctx);
 }
+
 function drawOuterFrameTo(ctxRef) {
   if (!showGrid) return; 
 
@@ -246,9 +270,16 @@ function drawOuterFrameTo(ctxRef) {
   ctxRef.stroke();
 }
 
+function drawThemeOverlayTo(ctxRef) {
+  if (currentTheme !== 'none' && themeImages[currentTheme]) {
+    const img = themeImages[currentTheme];
+    if (img.complete && img.naturalHeight > 0) {
+      ctxRef.drawImage(img, 0, 0, canvas.width, canvas.height);
+    }
+  }
+}
 
-
-//camera setup==========================================================================//
+// Camera setup
 async function startCamera() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -257,9 +288,8 @@ async function startCamera() {
     safeErr('Cannot access camera:', err);
   }
 }
-startCamera();
 
-//Preload: themes, filters, grains, fonts, dialogues=======================================//
+// Preload assets
 function preloadThemes() {
   const themes = ['Đi làm', 'Danisa','Dont starve together 1', 'MCK','GAMTIME'];
   themes.forEach(name => {
@@ -270,8 +300,6 @@ function preloadThemes() {
   });
 }
 
-
-//filters===================================================================//
 function preloadFilters() {
   const filters = [
     { name: "Sơn Tùng-MTP", path: "filters/Sơn Tùng-MTP.png", offsetX: 0, offsetY: 2, scale: 3 },
@@ -308,12 +336,13 @@ function preloadFilters() {
     { name: "hat mining 2", path: "filters/Oxygen not includ/hat mining 2.png", offsetX: -0.05, offsetY: 0.85, scale: 2.6 },
     { name: "hat mining 3", path: "filters/Oxygen not includ/hat mining 3.png", offsetX: -0.05, offsetY: 0.85, scale: 2.6 },
     { name: "hat mining 4", path: "filters/Oxygen not includ/hat mining 4.png", offsetX: -0.05, offsetY: 0.85, scale: 2.6 },
-     { name: "hat rancher 1", path: "filters/Oxygen not includ/hat rancher 1.png", offsetX: -0.05, offsetY: 0.85, scale: 2.7 },
+    {name: "hat rancher 1", path: "filters/Oxygen not includ/hat rancher 1.png", offsetX: -0.05, offsetY: 0.85, scale: 2.7 },
     { name: "hat rancher 2", path: "filters/Oxygen not includ/hat rancher 2.png", offsetX: -0.05, offsetY: 0.885, scale: 2.7 },
-     { name: "hat suit 1", path: "filters/Oxygen not includ/hat suit 1.png", offsetX: 0, offsetY: 0.6, scale: 2.35 },
+    { name: "hat suit 1", path: "filters/Oxygen not includ/hat suit 1.png", offsetX: 0, offsetY: 0.6, scale: 2.35 },
     { name: "hat suit 2", path: "filters/Oxygen not includ/hat suit 2.png", offsetX: 0, offsetY: 0.6, scale: 2.35 },
-     { name: "hat technical 1", path: "filters/Oxygen not includ/hat technical 1.png", offsetX: 0.05, offsetY: 0.85, scale: 2.3 },
+    { name: "hat technical 1", path: "filters/Oxygen not includ/hat technical 1.png", offsetX: 0.05, offsetY: 0.85, scale: 2.3 },
     { name: "hat technical 2", path: "filters/Oxygen not includ/hat technical 2.png", offsetX: 0.05, offsetY: 0.85, scale: 2.3 },
+    { name: "Fakerlike", path: "filters/idol/Faker like.png", offsetX: 0.65, offsetY: -0.3, scale: 6.6 },
   ];
 
   filters.forEach(f => {
@@ -325,7 +354,6 @@ function preloadFilters() {
   });
 }
 
-//dialogues===================================================================//
 function preloadDialogues() {
   const dialogues = [
     { name: "speech_bubble_1", path: "dialogues/speech_bubble_1.png" },
@@ -343,7 +371,6 @@ function preloadDialogues() {
   });
 }
 
-//Grains===================================================================//
 function preloadGrains() {
   const grains = [
     { name: "oldfilm", path: "textures/Old Film.mp4" },
@@ -366,8 +393,6 @@ function preloadGrains() {
   });
 }
 
-
-//fonts===================================================================//
 async function preloadFonts() {
   const fontsToLoad = ['32px FontTime', '32px FontPixel', '3px MyFont'];
   try {
@@ -378,7 +403,6 @@ async function preloadFonts() {
   }
 }
 
-//Preload assets========================================//
 function preloadAll() {
   preloadThemes();
   preloadFilters();
@@ -386,9 +410,8 @@ function preloadAll() {
   preloadGrains();
   preloadFonts();
 }
-preloadAll();
 
-//Load face models======================================== //
+// Face detection
 async function loadFaceModels() {
   if (faceModelsLoaded) return true;
   if (typeof faceapi === 'undefined') {
@@ -423,19 +446,49 @@ async function loadFaceModels() {
   }
 }
 
-//Drawing helpers: grid, frame, theme==============================================//
-
-function drawThemeOverlayTo(ctxRef) {
-  if (currentTheme !== 'none' && themeImages[currentTheme]) {
-    const img = themeImages[currentTheme];
-    if (img.complete && img.naturalHeight > 0) {
-      ctxRef.drawImage(img, 0, 0, canvas.width, canvas.height);
+// Filter position adjustment functions
+function toggleFilterPositionControls() {
+  const positionControls = document.getElementById('filterPositionControls');
+  if (selectedFilter !== 'none') {
+    positionControls.style.display = 'block';
+    
+    // Khôi phục giá trị offset đã lưu cho filter này
+    const filterKey = selectedFilter;
+    if (currentFilterAdjustments[filterKey]) {
+      filterOffsetX = currentFilterAdjustments[filterKey].x;
+      filterOffsetY = currentFilterAdjustments[filterKey].y;
+    } else {
+      filterOffsetX = 0;
+      filterOffsetY = 0;
     }
+    
+    updateOffsetDisplay();
+  } else {
+    positionControls.style.display = 'none';
   }
 }
 
+function updateOffsetDisplay() {
+  const offsetXValue = document.getElementById('offsetXValue');
+  const offsetYValue = document.getElementById('offsetYValue');
+  if (offsetXValue && offsetYValue) {
+    offsetXValue.textContent = filterOffsetX.toFixed(2);
+    offsetYValue.textContent = filterOffsetY.toFixed(2);
+  }
+}
 
-//grains==========================================================================
+function resetFilterPosition() {
+  filterOffsetX = 0;
+  filterOffsetY = 0;
+  updateOffsetDisplay();
+  
+  // Lưu điều chỉnh
+  if (selectedFilter !== 'none') {
+    currentFilterAdjustments[selectedFilter] = { x: filterOffsetX, y: filterOffsetY };
+  }
+}
+
+// Drawing functions
 function drawGrainOverlay() {
   if (currentGrain !== 'none' && grainVideos[currentGrain]) {
     const v = grainVideos[currentGrain];
@@ -460,7 +513,6 @@ function drawGrainOnCanvas(context, x, y, width, height) {
   }
 }
 
-//DIAOLUE====================================================================================
 function drawDialogueOnFace(detection) {
   if (!showDialogue || selectedDialogue === 'none' || !dialogueText.trim()) return;
 
@@ -497,14 +549,6 @@ function drawDialogueOnFace(detection) {
       centerY = nose[0].y - baseOffsetY * 1.5;
   }
 
-  //vẽ ô thoại=======================================================
-  overlayCtx.drawImage(
-    currentDialogue,
-    centerX - dialogueWidth / 2,
-    centerY - dialogueHeight / 2,
-    dialogueWidth,
-    dialogueHeight
-  );
   overlayCtx.drawImage(
     currentDialogue,
     centerX - dialogueWidth / 2,
@@ -513,7 +557,6 @@ function drawDialogueOnFace(detection) {
     dialogueHeight
   );
 
-  //Vẽ lời thoại===================================================
   overlayCtx.save();
   overlayCtx.translate(overlay.width, 0);
   overlayCtx.scale(-1, 1);
@@ -556,9 +599,7 @@ function drawDialogueOnFace(detection) {
   overlayCtx.restore();
 }
 
-
-
-//Vẽ lên camera===============================================================================
+// Face detection and overlay
 async function detectFacesLive() {
   if (selectedFilter === 'none' && (!showDialogue || selectedDialogue === 'none' || !dialogueText.trim())) {
     overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
@@ -590,6 +631,7 @@ async function detectFacesLive() {
     drawGrainOverlay();
 
     if (detections && detections.length > 0) {
+      // Vẽ filter với điều chỉnh vị trí
       if (selectedFilter !== 'none') {
         const currentFilter = filterImages[selectedFilter];
         if (currentFilter && currentFilter.image.complete) {
@@ -601,12 +643,12 @@ async function detectFacesLive() {
 
             const baseFaceWidth = Math.abs(rightEye[3].x - leftEye[0].x);
             const faceWidth = baseFaceWidth * (currentFilter.scale || 1.0);
-            const img = currentFilter.image;
-            const originalAspectRatio = img.naturalWidth / img.naturalHeight;
+            const originalAspectRatio = currentFilter.image.naturalWidth / currentFilter.image.naturalHeight;
             const faceHeight = faceWidth / originalAspectRatio;
 
-            const centerX = (leftEye[3].x + rightEye[0].x) / 2 - faceWidth * (currentFilter.offsetX || 0);
-            const centerY = nose[0].y - faceHeight * (currentFilter.offsetY || 0);
+            // Sử dụng filterOffsetX và filterOffsetY để điều chỉnh vị trí
+            const centerX = (leftEye[3].x + rightEye[0].x) / 2 - faceWidth * (currentFilter.offsetX || 0) + (filterOffsetX * faceWidth);
+            const centerY = nose[0].y - faceHeight * (currentFilter.offsetY || 0) + (filterOffsetY * faceHeight);
 
             overlayCtx.drawImage(
               currentFilter.image,
@@ -647,9 +689,7 @@ async function initializeFilter() {
   detectFacesLive();
 }
 
-//TIMESTAMP======================================================================================
-
-
+// Timestamp functions
 function formatTimestamp(date) {
   const DD = String(date.getDate()).padStart(2, '0');
   const MM = String(date.getMonth() + 1).padStart(2, '0');
@@ -672,23 +712,25 @@ function formatTimestamp(date) {
   }
 }
 
-
 function drawTimestampOnVideo() {
   if (!showTimestamp) return;
 
   const now = new Date();
   const text = formatTimestamp(now);
   const fontFamily = document.fonts && document.fonts.check && document.fonts.check(`12px ${timestampFont}`) ? timestampFont : 'monospace';
-
-    if (currentCanvasLayout === '1x1') {
+  
+  let sidepadding, bottomPadding, fontSize;
+  
+  if (currentCanvasLayout === '1x1') {
     sidepadding = 100;
-    bottomPadding = 50
+    bottomPadding = 50;
     fontSize = timestampSize * 0.5;
   } else {
     sidepadding = 25;
-    bottomPadding = 25
+    bottomPadding = 25;
     fontSize = timestampSize;
   }
+  
   let posX, posY, align;
   
   switch (timestampPosition) {
@@ -709,7 +751,7 @@ function drawTimestampOnVideo() {
       break;
     case 'bottom-right':
       posX = sidepadding;
-      posY = overlay.height - fontSize;; 
+      posY = overlay.height - fontSize;
       align = 'left';
       break;
     default:
@@ -807,285 +849,10 @@ function drawTimestamp(context, x, y, width, height) {
   context.restore();
 }
 
-//CONTROL====================================================================================
-document.addEventListener('DOMContentLoaded', function() {
-  timestampControls.style.display = 'none';
-  dialogueControls.style.display = 'none';
-  timestampToggle.checked = false;
-  dialogueToggle.checked = false;
-  
-  if (animationFrameId) cancelAnimationFrame(animationFrameId);
-  detectFacesLive();
-});
-
-// Start capture
-startBtn.addEventListener('click', startCapture);
-
-// Frame color control===============================
-frameColorPicker.addEventListener('input', (e) => {
-  frameColor = e.target.value;
-  drawGrid();
-});
-
-// Theme control===============================
-themeSelected.addEventListener("click", (e) => {
-  e.stopPropagation();
-  themeSelect.classList.toggle("open");
-});
-
-themeOptions.forEach(opt => {
-  opt.addEventListener("click", (e) => {
-    const value = opt.dataset.value;
-    themeSelected.textContent = opt.textContent;
-    themeSelect.classList.remove("open");
-    currentTheme = value;
-    drawGrid();
-  });
-});
-
-//SUbmenu=========================================================
-themeSubOptions.forEach(opt => {
-  opt.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const value = opt.dataset.value;
-    
-    const parentText = opt.closest('.theme-parent').textContent.split('→')[0].trim();
-    themeSelected.textContent = `${parentText} - ${opt.textContent}`;
-    
-    themeSelect.classList.remove("open");
-    currentTheme = value;
-    drawGrid();
-  });
-});
-
-document.addEventListener("click", () => {
-  themeSelect.classList.remove("open");
-});
-
-// Filter control===============================
-filterSelected.addEventListener("click",(e)=>{
-  e.stopPropagation();
-  filterSelect.classList.toggle("open");
-});
-
-filterOptions.forEach(opt=>{
-  opt.addEventListener("click",(e)=>{
-    const value = opt.dataset.value;
-    filterSelected.textContent = opt.textContent;
-    filterSelect.classList.remove("open");
-    selectedFilter=value;
-    if(animationFrameId) cancelAnimationFrame(animationFrameId);
-    selectedFilter==='none'?filterActive=false:initializeFilter();
-  });
-});
-
-dstOptions.forEach(opt=>{
-  opt.addEventListener("click",(e)=>{
-    e.stopPropagation();
-    const value = opt.dataset.value;
-    filterSelected.textContent = opt.textContent;
-    filterSelect.classList.remove("open");
-    selectedFilter=value;
-    if(animationFrameId) cancelAnimationFrame(animationFrameId);
-    initializeFilter();
-  });
-});
-
-document.addEventListener("click",()=>filterSelect.classList.remove("open"));
-
-// Grain control=================================================
-grainSelect.addEventListener('change', () => {
-  currentGrain = grainSelect.value;
-
-  Object.values(grainVideos).forEach(v => {
-    try { v.pause(); v.currentTime = 0; } catch (e) {}
-  });
-
-  if (currentGrain !== 'none' && grainVideos[currentGrain]) {
-    grainVideos[currentGrain].play().catch(() => {});
-  }
-
-  if (animationFrameId) cancelAnimationFrame(animationFrameId);
-  detectFacesLive();
-});
-
-// Grain opacity==================================================
-grainOpacitySlider.addEventListener('input', (e) => {
-  const val = parseInt(e.target.value);
-  grainOpacity = val / 100;
-  grainOpacityValue.textContent = `${val}%`;
-  if (animationFrameId) cancelAnimationFrame(animationFrameId);
-  detectFacesLive();
-});
-
-//Timestamp control=======================================
-timestampToggle.addEventListener('change', (e) => {
-  showTimestamp = e.target.checked;
-  timestampControls.style.display = showTimestamp ? 'block' : 'none';
-  if (animationFrameId) cancelAnimationFrame(animationFrameId);
-  detectFacesLive();
-});
-
-timestampFormatSel.addEventListener('change', (e) => {
-  timestampFormat = e.target.value;
-  if (timestampFormat === 'custom') {
-    customFormatGroup.style.display = 'flex';
-  } else {
-    customFormatGroup.style.display = 'none';
-  }
-  if (animationFrameId) cancelAnimationFrame(animationFrameId);
-  detectFacesLive();
-});
-
-timestampFontSel.addEventListener('change', (e) => { 
-  timestampFont = e.target.value; 
-  if (animationFrameId) cancelAnimationFrame(animationFrameId);
-  detectFacesLive();
-});
-
-timestampSizeInput.addEventListener('change', (e) => { 
-  timestampSize = parseInt(e.target.value) || 16; 
-  if (animationFrameId) cancelAnimationFrame(animationFrameId);
-  detectFacesLive();
-});
-
-if (timestampColorInput) timestampColorInput.addEventListener('input', (e) => { 
-  timestampColor = e.target.value; 
-  if (animationFrameId) cancelAnimationFrame(animationFrameId);
-  detectFacesLive();
-});
-
-timestampPositionSel.addEventListener('change', (e) => { 
-  timestampPosition = e.target.value; 
-  if (animationFrameId) cancelAnimationFrame(animationFrameId);
-  detectFacesLive();
-});
-
-customFormatInput.addEventListener('input', (e) => { 
-  customTimestampFormat = e.target.value; 
-  if (animationFrameId) cancelAnimationFrame(animationFrameId);
-  detectFacesLive();
-});
-
-///Dialogue control=============================================
-const dialogueScaleInput = document.getElementById('dialogueScale');
-const dialogueScaleValue = document.getElementById('dialogueScaleValue');
-
-dialogueScaleInput.addEventListener('input', (e) => {
-  const val = parseInt(e.target.value);
-  dialogueScale = val / 100;
-  dialogueScaleValue.textContent = `${val}%`;
-  if (animationFrameId) cancelAnimationFrame(animationFrameId);
-  detectFacesLive();
-});
-dialogueToggle.addEventListener('change', (e) => {
-  showDialogue = e.target.checked;
-  dialogueControls.style.display = showDialogue ? 'block' : 'none';
-  
-  if (showDialogue && !filterActive) {
-    initializeFilter();
-  } else {
-    if (animationFrameId) cancelAnimationFrame(animationFrameId);
-    detectFacesLive();
-  }
-});
-
-dialogueSelect.addEventListener('change', (e) => {
-  selectedDialogue = e.target.value;
-  if (showDialogue && selectedDialogue !== 'none' && !filterActive) {
-    initializeFilter();
-  } else {
-    if (animationFrameId) cancelAnimationFrame(animationFrameId);
-    detectFacesLive();
-  }
-});
-dialogueSelect.addEventListener('change', (e) => {
-  selectedDialogue = e.target.value;
-  if (animationFrameId) cancelAnimationFrame(animationFrameId);
-  detectFacesLive();
-});
-
-dialogueTextInput.addEventListener('input', (e) => {
-  dialogueText = e.target.value;
-  if (animationFrameId) cancelAnimationFrame(animationFrameId);
-  detectFacesLive();
-});
-
-dialogueFontSel.addEventListener('change', (e) => {
-  dialogueFont = e.target.value;
-  if (animationFrameId) cancelAnimationFrame(animationFrameId);
-  detectFacesLive();
-});
-
-dialogueSizeInput.addEventListener('change', (e) => {
-  dialogueSize = parseInt(e.target.value) || 16;
-  if (animationFrameId) cancelAnimationFrame(animationFrameId);
-  detectFacesLive();
-});
-
-dialogueColorInput.addEventListener('input', (e) => {
-  dialogueColor = e.target.value;
-  if (animationFrameId) cancelAnimationFrame(animationFrameId);
-  detectFacesLive();
-});
-
-dialoguePositionSel.addEventListener('change', (e) => {
-  dialoguePosition = e.target.value;
-  if (animationFrameId) cancelAnimationFrame(animationFrameId);
-  detectFacesLive();
-});
-
-function handleResize() {
-  if (video.videoWidth > 0 && video.videoHeight > 0) {
-    overlay.width = video.videoWidth;
-    overlay.height = video.videoHeight;
-    if (typeof faceapi !== 'undefined' && faceModelsLoaded) {
-      const displaySize = { width: video.videoWidth, height: video.videoHeight };
-      faceapi.matchDimensions(overlay, displaySize);
-    }
-  }
-}
-video.addEventListener('loadedmetadata', handleResize);
-window.addEventListener('resize', handleResize);
-video.addEventListener('play', handleResize);
-
-preloadFonts();
-drawGrid();
-
-
-//WEATHER==============================================================================//
-let currentWeather = 'none';
-let leafInterval = null;
-let snowInterval = null;
-let rainInterval = null;
-let petalInterval = null;
-
-const weatherParent = document.querySelector('.weather-parent');
-const weatherSubmenu = document.querySelector('.weather-submenu');
-const weatherOptions = weatherSubmenu.querySelectorAll('li');
-
-weatherParent.addEventListener('click', (e) => {
-  e.stopPropagation();
-  weatherSubmenu.style.display = weatherSubmenu.style.display === 'block' ? 'none' : 'block';
-});
-
-weatherOptions.forEach(opt => {
-  opt.addEventListener('click', (e) => {
-    e.stopPropagation();
-    currentWeather = opt.dataset.value;
-    
-    updateWeatherEffects();
-    
-    weatherSubmenu.style.display = 'none';
-  });
-});
-document.addEventListener('click', () => {
-  weatherSubmenu.style.display = 'none';
-});
-
+// Weather effects
 function updateWeatherEffects() {
   stopCreatingNewWeatherEffects();
-    switch(currentWeather) {
+  switch(currentWeather) {
     case 'none':
       break;
     case 'spring':
@@ -1104,7 +871,6 @@ function updateWeatherEffects() {
   safeLog(`Weather changed to: ${currentWeather}`);
 }
 
-//Hoa đào======================================================================//
 function createFlowerPetals() {
   petalInterval = setInterval(() => {
     if (currentWeather === 'spring') {
@@ -1112,6 +878,7 @@ function createFlowerPetals() {
     }
   }, Math.random() * 200 + 150);
 }
+
 function createPetal() {
   if (currentWeather !== 'spring') return;
   const petal = document.createElement('div');
@@ -1133,7 +900,6 @@ function createPetal() {
   }, duration * 5000);
 }
 
-//Mưa=====================================================================//
 function startRain() {
   createRaindrop();
   rainInterval = setInterval(() => {
@@ -1148,6 +914,7 @@ function startRain() {
     }
   }, 10);
 }
+
 function createRaindrop() {
   if (currentWeather !== 'summer') return;
   const raindrop = document.createElement('div');
@@ -1180,7 +947,6 @@ function createRaindrop() {
   }, duration * 1000);
 }
 
-//Leaf fall==========================================================//
 function startLeafFall() {
   createLeaf();
   leafInterval = setInterval(() => {
@@ -1189,6 +955,7 @@ function startLeafFall() {
     }
   }, Math.random() * 150 + 100);
 }
+
 function createLeaf() {
   if (currentWeather !== 'autumn') return;
   const leaf = document.createElement('div');
@@ -1211,11 +978,7 @@ function createLeaf() {
   
   leaf.style.opacity = Math.random() * 0.7 + 0.3;
   
-  const colors = ['#ff6b35',
-    '#f4a261',
-    '#e76f51',
-    '#e9c46a'
-  ];
+  const colors = ['#ff6b35', '#f4a261', '#e76f51', '#e9c46a'];
   const randomColor = colors[Math.floor(Math.random() * colors.length)];
   leaf.style.color = randomColor;
   document.body.appendChild(leaf);
@@ -1227,7 +990,6 @@ function createLeaf() {
   }, duration * 5000);
 }
 
-//Snow===============================================================================//
 function startSnowFall() {
   createSnowflake();
   snowInterval = setInterval(() => {
@@ -1286,70 +1048,7 @@ function stopCreatingNewWeatherEffects() {
   }
 }
 
-//================================================
-document.addEventListener('DOMContentLoaded', function() {
-  updateWeatherEffects();
-});
-
-//NHẠC=========================================================================================
-let currentMusic = 'none';
-let lyricsInterval = null;
-let currentLyricIndex = 0;
-
-const musicParent = document.querySelector('.music-parent');
-const musicSubmenu = document.querySelector('.music-submenu');
-const musicOptions = musicSubmenu.querySelectorAll('li');
-const lyricsContainer = document.getElementById('lyricsContainer');
-const lyricsText = document.getElementById('lyricsText');
-
-// Nơi này có anh
-const noiNayCoAnhLyrics = [
-  { text: "Em là ai bước đến nơi đây dịu dàng chân phương", duration: 5000 },
-  { text: "Em là ai tựa như ánh nắng ban mai ngọt ngào trong sương", duration: 5000 },
-  { text: "Ngắm em thật lâu", duration: 2500 },
-  { text: "Con tim anh yếu mềm", duration: 2500 },
-  { text: "Đắm say từ phút đó", duration: 2500 },
-  { text: "Từng giây trôi yêu thêm", duration: 3500 },
-  { text: "Bao ngày qua bình minh đánh thức xua tan bộn bề nơi anh", duration: 5000 },
-  { text: "Bao ngày qua niềm thương nỗi nhớ bay theo bầu trời trong xanh", duration: 5000 },
-  { text: "Liếc đôi hàng mi", duration: 3000 },
-  { text: "Mong manh anh thẫn thờ", duration: 2900 },
-  { text: "Muốn hôn nhẹ mái tóc", duration: 2000 },
-  { text: "Bờ môi em anh mơ", duration: 2800 },
-  { text: "Cầm tay anh dựa vai anh", duration: 2400 },
-  { text: "Kề bên anh nơi này có anh", duration: 2400 },
-  { text: "Gió mang câu tình ca", duration: 1900 },
-  { text: "Ngàn ánh sao vụt qua nhẹ ôm lấy em", duration: 3500 },
-  { text: "Cầm tay anh dựa vai anh", duration: 2400 },
-  { text: "Kề bên anh nơi này có anh", duration: 2400 },
-  { text: "Khép đôi mi thật lâu", duration: 2000 },
-  { text: "Nguyện mãi bên cạnh nhau yêu say đắm như ngày đầu", duration: 4000 },
-  { text: "Mùa xuân đến bình yên", duration: 2750 },
-  { text: "Cho anh những giấc mơ", duration: 2600 },
-  { text: "Hạ lưu giữ ngày mưa", duration: 2700 },
-  { text: "Ngọt ngào nên thơ", duration: 2500 },
-  { text: "Mùa thu lá vàng rơi", duration: 2700 },
-  { text: "Đông sang anh nhớ em", duration: 2500 },
-  { text: "Tình yêu bé nhỏ xin", duration: 2500 },
-  { text: "Dành tặng riêng em", duration: 3000 },  
-  { text: "𝅘𝅥𝅯 𝅘𝅥 𝅘𝅥𝅮 𝅘𝅥𝅯 𝅘𝅥 𝅘𝅥𝅮", duration: 6000 }, 
-];
-
-
-musicParent.addEventListener('click', (e) => {
-  e.stopPropagation();
-  musicSubmenu.style.display = musicSubmenu.style.display === 'block' ? 'none' : 'block';
-});
-musicOptions.forEach(opt => {
-  opt.addEventListener('click', (e) => {
-    e.stopPropagation();
-    currentMusic = opt.dataset.value;
-    updateMusicEffects();   
-    musicSubmenu.style.display = 'none';
-  });
-});
-
-
+// Music and lyrics
 function updateMusicEffects() {
   stopCurrentMusic();
   switch(currentMusic) {
@@ -1373,12 +1072,16 @@ function stopCurrentMusic() {
 }
 
 function showLyrics() {
+  const lyricsContainer = document.getElementById('lyricsContainer');
+  const lyricsText = document.getElementById('lyricsText');
   lyricsContainer.style.display = 'block';
   lyricsText.textContent = '';
   lyricsText.classList.remove('show');
 }
 
 function hideLyrics() {
+  const lyricsContainer = document.getElementById('lyricsContainer');
+  const lyricsText = document.getElementById('lyricsText');
   lyricsContainer.style.display = 'none';
   lyricsText.classList.remove('show');
 }
@@ -1397,6 +1100,7 @@ function displayNextLyric() {
   }
   
   const currentLyric = noiNayCoAnhLyrics[currentLyricIndex];
+  const lyricsText = document.getElementById('lyricsText');
   
   lyricsText.classList.remove('show');
   
@@ -1414,23 +1118,37 @@ function displayNextLyric() {
         displayNextLyric();
       }, displayTime);
     }
-  }, 0)
+  }, 0);
 }
-//================================================================================================
-document.addEventListener('DOMContentLoaded', function() {
-  updateMusicEffects();
-});
 
-document.addEventListener('DOMContentLoaded', function() {
-  updateCanvasLayout('3x2');
-});
-document.addEventListener('click', () => {
-  musicSubmenu.style.display = 'none';
-});
+// Capture functions
+function redrawGridLines() {
+  if (!showGrid) return;
 
+  ctx.strokeStyle = frameColor;
+  ctx.lineWidth = 20;
+  if (cols > 1) {
+    for (let i = 1; i < cols; i++) {
+      ctx.beginPath();
+      ctx.moveTo(leftside + i * frameW, 0);
+      ctx.lineTo(leftside + i * frameW, canvasHeight);
+      ctx.stroke();
+    }
+  }
+  
+  if (rows > 1) {
+    for (let i = 1; i < rows; i++) {
+      ctx.beginPath();
+      ctx.moveTo(leftside, i * frameH);
+      ctx.lineTo(canvasWidth - rightside, i * frameH);
+      ctx.stroke();
+    }
+  }
+  
+  drawOuterFrameTo(ctx);
+  drawThemeOverlayTo(ctx);
+}
 
-
-//CHỤP ẢNH==================================================================
 function captureFrame(index) {
   const row = Math.floor(index / cols);
   const col = index % cols;
@@ -1502,34 +1220,6 @@ function captureFrame(index) {
   }
 }
 
-
-//Vẽ lại viền 
-function redrawGridLines() {
-  if (!showGrid) return;
-
-  ctx.strokeStyle = frameColor;
-  ctx.lineWidth = 20;
-  if (cols > 1) {
-    for (let i = 1; i < cols; i++) {
-      ctx.beginPath();
-      ctx.moveTo(leftside + i * frameW, 0);
-      ctx.lineTo(leftside + i * frameW, canvasHeight);
-      ctx.stroke();
-    }
-  }
-  
-  if (rows > 1) {
-    for (let i = 1; i < rows; i++) {
-      ctx.beginPath();
-      ctx.moveTo(leftside, i * frameH);
-      ctx.lineTo(canvasWidth - rightside, i * frameH);
-      ctx.stroke();
-    }
-  }
-  
-  drawOuterFrameTo(ctx);
-  drawThemeOverlayTo(ctx);
-}
 function startCapture() {
   startBtn.style.display = 'none';
   statusText.style.display = 'block';
@@ -1561,14 +1251,358 @@ function startCapture() {
     statusText.textContent = `Ảnh ${count + 1}/${cols * rows} chụp sau ${timeLeft--}s`;
   }, 1000);
 }
-const canvasLayoutSelect = document.getElementById('canvasLayout');
 
+// Event handlers
+function handleResize() {
+  if (video.videoWidth > 0 && video.videoHeight > 0) {
+    overlay.width = video.videoWidth;
+    overlay.height = video.videoHeight;
+    if (typeof faceapi !== 'undefined' && faceModelsLoaded) {
+      const displaySize = { width: video.videoWidth, height: video.videoHeight };
+      faceapi.matchDimensions(overlay, displaySize);
+    }
+  }
+}
+
+// Initialize app
+document.addEventListener('DOMContentLoaded', function() {
+  timestampControls.style.display = 'none';
+  dialogueControls.style.display = 'none';
+  timestampToggle.checked = false;
+  dialogueToggle.checked = false;
+  
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+  
+  updateWeatherEffects();
+  updateMusicEffects();
+  updateCanvasLayout('3x2');
+
+  // Thêm event listeners cho nút điều chỉnh vị trí filter
+  const positionBtns = document.querySelectorAll('.position-btn');
+  positionBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const direction = e.target.dataset.direction;
+      
+      if (direction === 'center') {
+        resetFilterPosition();
+      } else {
+        // Điều chỉnh step size
+        const step = 0.05;
+        
+        switch(direction) {
+          case 'up':
+            filterOffsetY -= step;
+            break;
+          case 'down':
+            filterOffsetY += step;
+            break;
+          case 'left':
+            filterOffsetX -= step;
+            break;
+          case 'right':
+            filterOffsetX += step;
+            break;
+        }
+        
+        updateOffsetDisplay();
+      }
+      
+      // Lưu điều chỉnh cho filter hiện tại
+      if (selectedFilter !== 'none') {
+        currentFilterAdjustments[selectedFilter] = { 
+          x: filterOffsetX, 
+          y: filterOffsetY 
+        };
+      }
+      
+      // Cập nhật ngay lập tức
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      detectFacesLive();
+    });
+  });
+});
+
+// Event listeners
+startBtn.addEventListener('click', startCapture);
+
+frameColorPicker.addEventListener('input', (e) => {
+  frameColor = e.target.value;
+  drawGrid();
+});
+
+// Theme control
+themeSelected.addEventListener("click", (e) => {
+  e.stopPropagation();
+  themeSelect.classList.toggle("open");
+});
+
+themeOptions.forEach(opt => {
+  opt.addEventListener("click", (e) => {
+    const value = opt.dataset.value;
+    themeSelected.textContent = opt.textContent;
+    themeSelect.classList.remove("open");
+    currentTheme = value;
+    drawGrid();
+  });
+});
+
+themeSubOptions.forEach(opt => {
+  opt.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const value = opt.dataset.value;
+    
+    const parentText = opt.closest('.theme-parent').textContent.split('→')[0].trim();
+    themeSelected.textContent = `${parentText} - ${opt.textContent}`;
+    
+    themeSelect.classList.remove("open");
+    currentTheme = value;
+    drawGrid();
+  });
+});
+
+document.addEventListener("click", () => {
+  themeSelect.classList.remove("open");
+});
+
+// Filter control
+filterSelected.addEventListener("click",(e)=>{
+  e.stopPropagation();
+  filterSelect.classList.toggle("open");
+});
+
+filterOptions.forEach(opt=>{
+  opt.addEventListener("click",(e)=>{
+    const value = opt.dataset.value;
+    filterSelected.textContent = opt.textContent;
+    filterSelect.classList.remove("open");
+    selectedFilter = value;
+    
+    // Hiển thị/ẩn điều khiển vị trí
+    toggleFilterPositionControls();
+    
+    if(animationFrameId) cancelAnimationFrame(animationFrameId);
+    selectedFilter === 'none' ? filterActive = false : initializeFilter();
+  });
+});
+
+dstOptions.forEach(opt=>{
+  opt.addEventListener("click",(e)=>{
+    e.stopPropagation();
+    const value = opt.dataset.value;
+    filterSelected.textContent = opt.textContent;
+    filterSelect.classList.remove("open");
+    selectedFilter = value;
+    
+    // Hiển thị/ẩn điều khiển vị trí
+    toggleFilterPositionControls();
+    
+    if(animationFrameId) cancelAnimationFrame(animationFrameId);
+    initializeFilter();
+  });
+});
+
+document.addEventListener("click",()=>filterSelect.classList.remove("open"));
+
+// Grain control
+grainSelect.addEventListener('change', () => {
+  currentGrain = grainSelect.value;
+
+  Object.values(grainVideos).forEach(v => {
+    try { v.pause(); v.currentTime = 0; } catch (e) {}
+  });
+
+  if (currentGrain !== 'none' && grainVideos[currentGrain]) {
+    grainVideos[currentGrain].play().catch(() => {});
+  }
+
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+grainOpacitySlider.addEventListener('input', (e) => {
+  const val = parseInt(e.target.value);
+  grainOpacity = val / 100;
+  grainOpacityValue.textContent = `${val}%`;
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+// Timestamp control
+timestampToggle.addEventListener('change', (e) => {
+  showTimestamp = e.target.checked;
+  timestampControls.style.display = showTimestamp ? 'block' : 'none';
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+timestampFormatSel.addEventListener('change', (e) => {
+  timestampFormat = e.target.value;
+  if (timestampFormat === 'custom') {
+    customFormatGroup.style.display = 'flex';
+  } else {
+    customFormatGroup.style.display = 'none';
+  }
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+timestampFontSel.addEventListener('change', (e) => { 
+  timestampFont = e.target.value; 
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+timestampSizeInput.addEventListener('change', (e) => { 
+  timestampSize = parseInt(e.target.value) || 16; 
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+if (timestampColorInput) timestampColorInput.addEventListener('input', (e) => { 
+  timestampColor = e.target.value; 
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+timestampPositionSel.addEventListener('change', (e) => { 
+  timestampPosition = e.target.value; 
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+customFormatInput.addEventListener('input', (e) => { 
+  customTimestampFormat = e.target.value; 
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+// Dialogue control
+dialogueScaleInput.addEventListener('input', (e) => {
+  const val = parseInt(e.target.value);
+  dialogueScale = val / 100;
+  dialogueScaleValue.textContent = `${val}%`;
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+dialogueToggle.addEventListener('change', (e) => {
+  showDialogue = e.target.checked;
+  dialogueControls.style.display = showDialogue ? 'block' : 'none';
+  
+  if (showDialogue && !filterActive) {
+    initializeFilter();
+  } else {
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    detectFacesLive();
+  }
+});
+
+dialogueSelect.addEventListener('change', (e) => {
+  selectedDialogue = e.target.value;
+  if (showDialogue && selectedDialogue !== 'none' && !filterActive) {
+    initializeFilter();
+  } else {
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    detectFacesLive();
+  }
+});
+
+dialogueTextInput.addEventListener('input', (e) => {
+  dialogueText = e.target.value;
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+dialogueFontSel.addEventListener('change', (e) => {
+  dialogueFont = e.target.value;
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+dialogueSizeInput.addEventListener('change', (e) => {
+  dialogueSize = parseInt(e.target.value) || 16;
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+dialogueColorInput.addEventListener('input', (e) => {
+  dialogueColor = e.target.value;
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+dialoguePositionSel.addEventListener('change', (e) => {
+  dialoguePosition = e.target.value;
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  detectFacesLive();
+});
+
+// Weather control
+const weatherParent = document.querySelector('.weather-parent');
+const weatherSubmenu = document.querySelector('.weather-submenu');
+const weatherOptions = weatherSubmenu.querySelectorAll('li');
+
+weatherParent.addEventListener('click', (e) => {
+  e.stopPropagation();
+  weatherSubmenu.style.display = weatherSubmenu.style.display === 'block' ? 'none' : 'block';
+});
+
+weatherOptions.forEach(opt => {
+  opt.addEventListener('click', (e) => {
+    e.stopPropagation();
+    currentWeather = opt.dataset.value;
+    
+    updateWeatherEffects();
+    
+    weatherSubmenu.style.display = 'none';
+  });
+});
+
+document.addEventListener('click', () => {
+  weatherSubmenu.style.display = 'none';
+});
+
+// Music control
+const musicParent = document.querySelector('.music-parent');
+const musicSubmenu = document.querySelector('.music-submenu');
+const musicOptions = musicSubmenu.querySelectorAll('li');
+
+musicParent.addEventListener('click', (e) => {
+  e.stopPropagation();
+  musicSubmenu.style.display = musicSubmenu.style.display === 'block' ? 'none' : 'block';
+});
+
+musicOptions.forEach(opt => {
+  opt.addEventListener('click', (e) => {
+    e.stopPropagation();
+    currentMusic = opt.dataset.value;
+    updateMusicEffects();   
+    musicSubmenu.style.display = 'none';
+  });
+});
+
+document.addEventListener('click', () => {
+  musicSubmenu.style.display = 'none';
+});
+
+// Canvas layout control
 canvasLayoutSelect.addEventListener('change', (e) => {
   updateCanvasLayout(e.target.value);
 });
 
-
+// Grid control
 gridToggle.addEventListener('change', (e) => {
   showGrid = e.target.checked;
   drawGrid(); 
 });
+
+// Video event listeners
+video.addEventListener('loadedmetadata', handleResize);
+window.addEventListener('resize', handleResize);
+video.addEventListener('play', handleResize);
+
+// Initialize application
+startCamera();
+preloadAll();
+drawGrid();
