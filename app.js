@@ -1288,7 +1288,7 @@ document.addEventListener('DOMContentLoaded', function() {
         resetFilterPosition();
       } else {
         // Điều chỉnh step size
-        const step = 0.05;
+        const step = 0.01;
         
         switch(direction) {
           case 'up':
